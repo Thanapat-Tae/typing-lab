@@ -30,3 +30,32 @@
   color: #f87171;
   background-color: rgba(248, 113, 113, 0.12);
 }
+
+.timer-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  min-height: 64px;
+  margin-bottom: 1rem;
+}
+
+.typing-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #9bb8e8;
+}
+
+.typing-timer.timer-warning {
+  color: #f87171;
+}
+
+.typing-timer.timer-hidden {
+  visibility: hidden;
+}
