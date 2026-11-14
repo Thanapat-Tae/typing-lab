@@ -1,0 +1,32 @@
+.typing-test {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.typing-passage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+}
+
+.typing-word {
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.active-word {
+  background-color: rgba(155, 184, 232, 0.15);
+}
+
+.correct {
+  color: #4ade80;
+}
+
+.incorrect {
+  color: #f87171;
+  background-color: rgba(248, 113, 113, 0.12);
+}
