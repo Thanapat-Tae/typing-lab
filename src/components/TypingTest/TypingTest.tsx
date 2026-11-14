@@ -1,11 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { calculateTimeLimit } from "../../utils/calculateTimeLimit";
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
+import { calculateAccuracy } from "../../utils/calculateAccuracy";
 import "./TypingTest.css";
 
 const passage = "The quiet moon shines above the sleeping city.";
 
 const words = passage.split(" ");
+
+function commonPrefixLength(left: string, right: string): number {
+  let length = 0;
+  while (
+    length < left.length &&
+    length < right.length &&
+    left[length] === right[length]
+  ) {
+    length += 1;
+  }
+  return length;
+}
+
+function commonSuffixLength(left: string, right: string): number {
+  let length = 0;
+  while (
+    length < left.length &&
+    length < right.length &&
+    left[left.length - 1 - length] === right[right.length - 1 - length]
+  ) {
+    length += 1;
+  }
+  return length;
+}
 
 function TypingTest() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -17,12 +42,18 @@ function TypingTest() {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [hasStarted, setHasStarted] = useState(false);
   const [wpm, setWpm] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
 
   const isFinished = currentWordIndex >= words.length;
   const isTimeUp = timeLeft === 0;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const startedAtRef = useRef<number | null>(null);
+  const inputValueRef = useRef("");
+  const isComposingRef = useRef(false);
+  const compositionStartValueRef = useRef("");
+  const accuracyCountsRef = useRef({ correct: 0, total: 0 });
+  const accuracyFrozenRef = useRef(false);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -70,7 +101,15 @@ function TypingTest() {
   }, [hasStarted, isFinished, isTimeUp]);
 
   useEffect(() => {
-    if ((!isFinished && !isTimeUp) || startedAtRef.current === null) return;
+    if (!isFinished && !isTimeUp) return;
+
+    if (!accuracyFrozenRef.current) {
+      accuracyFrozenRef.current = true;
+      const { correct, total } = accuracyCountsRef.current;
+      setAccuracy(calculateAccuracy(correct, total));
+    }
+
+    if (startedAtRef.current === null) return;
 
     const stoppedAt = performance.now();
     const elapsedMilliseconds = Math.max(0, stoppedAt - startedAtRef.current);
@@ -85,11 +124,14 @@ function TypingTest() {
   function handleInput(value: string) {
     if (isFinished || isTimeUp) return;
 
+    const previousInput = inputValueRef.current;
     const expectedWord = words[currentWordIndex];
     const isLastWord = currentWordIndex === words.length - 1;
 
     // Finish immediately when the final word is correct.
     if (isLastWord && value === expectedWord) {
+      recordCharacterAttempts(previousInput, value, expectedWord, false);
+      inputValueRef.current = "";
       startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, value]);
       setCurrentWordIndex(words.length);
@@ -97,21 +139,80 @@ function TypingTest() {
       return;
     }
 
-    // Space submits a correctly typed word.
+    // Only a single separator after an exactly correct word is accepted.
     if (value.endsWith(" ")) {
-      if (currentInput !== expectedWord) return;
+      if (
+        previousInput !== expectedWord ||
+        value !== `${expectedWord} `
+      ) {
+        setCurrentInput(previousInput);
+        return;
+      }
 
+      recordCharacterAttempts(previousInput, value, expectedWord, true);
+      inputValueRef.current = "";
       startTimerIfNeeded();
-      setCompletedWords((previous) => [...previous, currentInput]);
+      setCompletedWords((previous) => [...previous, previousInput]);
       setCurrentWordIndex((previous) => previous + 1);
       setCurrentInput("");
       return;
     }
 
-    if (value !== currentInput) {
+    if (value !== previousInput) {
+      recordCharacterAttempts(previousInput, value, expectedWord, false);
+      inputValueRef.current = value;
       startTimerIfNeeded();
       setCurrentInput(value);
     }
+  }
+
+  function recordCharacterAttempts(
+    previousInput: string,
+    nextInput: string,
+    expectedWord: string,
+    acceptedSeparator: boolean,
+  ) {
+    // Score only the net inserted delta: deletion and unchanged text never add
+    // attempts, while replacement characters are scored at their new position.
+    const prefixLength = commonPrefixLength(previousInput, nextInput);
+    const suffixLength = commonSuffixLength(
+      previousInput.slice(prefixLength),
+      nextInput.slice(prefixLength),
+    );
+    const insertedText = nextInput.slice(
+      prefixLength,
+      nextInput.length - suffixLength,
+    );
+
+    for (let index = 0; index < insertedText.length; index += 1) {
+      const characterIndex = prefixLength + index;
+      const expectedCharacter =
+        characterIndex < expectedWord.length
+          ? expectedWord[characterIndex]
+          : acceptedSeparator &&
+              characterIndex === expectedWord.length &&
+              currentWordIndex < words.length - 1
+            ? " "
+            : undefined;
+
+      accuracyCountsRef.current.total += 1;
+      if (insertedText[index] === expectedCharacter) {
+        accuracyCountsRef.current.correct += 1;
+      }
+    }
+  }
+
+  function handleCompositionStart() {
+    isComposingRef.current = true;
+    compositionStartValueRef.current = inputValueRef.current;
+  }
+
+  function handleCompositionEnd(value: string) {
+    isComposingRef.current = false;
+    // Count only the committed composition text, never intermediate IME updates.
+    inputValueRef.current = compositionStartValueRef.current;
+    setCurrentInput(compositionStartValueRef.current);
+    handleInput(value);
   }
 
   function startTimerIfNeeded() {
@@ -217,14 +318,33 @@ function TypingTest() {
         })}
       </div>
 
-      {wpm !== null && <p className="typing-wpm">{wpm.toFixed(1)} WPM</p>}
+      {(wpm !== null || accuracy !== null) && (
+        <p className="typing-result">
+          {wpm !== null && <span>{wpm.toFixed(1)} WPM</span>}
+          {accuracy !== null && <span>{accuracy.toFixed(1)}% accuracy</span>}
+        </p>
+      )}
 
       <input
         ref={inputRef}
         className="typing-input"
         type="text"
         value={currentInput}
-        onChange={(event) => handleInput(event.target.value)}
+        onChange={(event) => {
+          if (
+            isComposingRef.current ||
+            (event.nativeEvent as InputEvent).isComposing
+          ) {
+            // IME updates are provisional; compositionend scores the commit once.
+            setCurrentInput(event.target.value);
+            return;
+          }
+          handleInput(event.target.value);
+        }}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={(event) =>
+          handleCompositionEnd(event.currentTarget.value)
+        }
         disabled={isFinished || isTimeUp}
         placeholder={isFinished ? "Test complete!" : ""}
         autoComplete="off"

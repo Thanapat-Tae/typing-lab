@@ -108,9 +108,12 @@
   visibility: hidden;
 }
 
-.typing-wpm {
+.typing-result {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
   margin-bottom: 1rem;
   color: #9bb8e8;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
