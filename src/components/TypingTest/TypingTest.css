@@ -107,3 +107,10 @@
 .typing-timer.timer-hidden {
   visibility: hidden;
 }
+
+.typing-wpm {
+  margin-bottom: 1rem;
+  color: #9bb8e8;
+  font-size: 1.25rem;
+  font-weight: 600;
+}

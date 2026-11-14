@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { calculateTimeLimit } from "../../utils/calculateTimeLimit";
+import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import "./TypingTest.css";
 
 const passage = "The quiet moon shines above the sleeping city.";
@@ -15,11 +16,13 @@ function TypingTest() {
 
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [hasStarted, setHasStarted] = useState(false);
+  const [wpm, setWpm] = useState<number | null>(null);
 
   const isFinished = currentWordIndex >= words.length;
   const isTimeUp = timeLeft === 0;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const startedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -66,18 +69,28 @@ function TypingTest() {
     return () => window.clearInterval(intervalId);
   }, [hasStarted, isFinished, isTimeUp]);
 
+  useEffect(() => {
+    if ((!isFinished && !isTimeUp) || startedAtRef.current === null) return;
+
+    const stoppedAt = performance.now();
+    const elapsedMilliseconds = Math.max(0, stoppedAt - startedAtRef.current);
+    const correctCharacters = countCorrectCharacters(
+      words,
+      completedWords,
+      currentInput,
+    );
+    setWpm(calculateWpm(correctCharacters, elapsedMilliseconds));
+  }, [isFinished, isTimeUp, completedWords, currentInput]);
+
   function handleInput(value: string) {
     if (isFinished || isTimeUp) return;
-
-    if (!hasStarted && value.length > 0) {
-      setHasStarted(true);
-    }
 
     const expectedWord = words[currentWordIndex];
     const isLastWord = currentWordIndex === words.length - 1;
 
     // Finish immediately when the final word is correct.
     if (isLastWord && value === expectedWord) {
+      startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, value]);
       setCurrentWordIndex(words.length);
       setCurrentInput("");
@@ -88,13 +101,24 @@ function TypingTest() {
     if (value.endsWith(" ")) {
       if (currentInput !== expectedWord) return;
 
+      startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, currentInput]);
       setCurrentWordIndex((previous) => previous + 1);
       setCurrentInput("");
       return;
     }
 
-    setCurrentInput(value);
+    if (value !== currentInput) {
+      startTimerIfNeeded();
+      setCurrentInput(value);
+    }
+  }
+
+  function startTimerIfNeeded() {
+    if (startedAtRef.current !== null) return;
+
+    startedAtRef.current = performance.now();
+    setHasStarted(true);
   }
 
   return (
@@ -192,6 +216,8 @@ function TypingTest() {
           );
         })}
       </div>
+
+      {wpm !== null && <p className="typing-wpm">{wpm.toFixed(1)} WPM</p>}
 
       <input
         ref={inputRef}
