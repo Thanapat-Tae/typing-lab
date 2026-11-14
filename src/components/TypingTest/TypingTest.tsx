@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { calculateTimeLimit } from "../../utils/calculateTimeLimit";
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
@@ -50,6 +50,7 @@ function TypingTest() {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [hasStarted, setHasStarted] = useState(false);
   const [statistics, setStatistics] = useState<TestStatistics | null>(null);
+  const [resetVersion, setResetVersion] = useState(0);
 
   const isFinished = currentWordIndex >= words.length;
   const isTimeUp = timeLeft === 0;
@@ -61,6 +62,23 @@ function TypingTest() {
   const isComposingRef = useRef(false);
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
+
+  const resetSession = useCallback(() => {
+    setCurrentWordIndex(0);
+    setCurrentInput("");
+    setCompletedWords([]);
+    setTimeLeft(timeLimit);
+    setHasStarted(false);
+    setStatistics(null);
+
+    startedAtRef.current = null;
+    stoppedAtRef.current = null;
+    inputValueRef.current = "";
+    isComposingRef.current = false;
+    compositionStartValueRef.current = "";
+    accuracyCountsRef.current = { correct: 0, total: 0 };
+    setResetVersion((previous) => previous + 1);
+  }, [timeLimit]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -82,7 +100,9 @@ function TypingTest() {
 
       if (
         target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLButtonElement ||
+        target instanceof HTMLSelectElement
       ) {
         return;
       }
@@ -94,6 +114,29 @@ function TypingTest() {
 
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, []);
+
+  useEffect(() => {
+    function handleRetryShortcut(event: KeyboardEvent) {
+      const isRetryShortcut =
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        event.key === "Enter" &&
+        !event.isComposing;
+
+      if (!isRetryShortcut || (!isFinished && !isTimeUp)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) resetSession();
+    }
+
+    window.addEventListener("keydown", handleRetryShortcut);
+    return () => window.removeEventListener("keydown", handleRetryShortcut);
+  }, [isFinished, isTimeUp, resetSession]);
+
+  useEffect(() => {
+    if (resetVersion > 0) inputRef.current?.focus();
+  }, [resetVersion]);
 
   useEffect(() => {
     if (!hasStarted || isFinished || isTimeUp) {
@@ -329,13 +372,23 @@ function TypingTest() {
       </div>
 
       {statistics !== null && (
-        <p className="typing-result">
-          <span>{statistics.wpm.toFixed(1)} WPM</span>
-          <span>{statistics.accuracy.toFixed(1)}% accuracy</span>
-          <span>{statistics.words} words</span>
-          <span>{statistics.characters} chars</span>
-          <span>{statistics.elapsedSeconds.toFixed(1)}s</span>
-        </p>
+        <div className="typing-session-summary">
+          <p className="typing-result">
+            <span>{statistics.wpm.toFixed(1)} WPM</span>
+            <span>{statistics.accuracy.toFixed(1)}% accuracy</span>
+            <span>{statistics.words} words</span>
+            <span>{statistics.characters} chars</span>
+            <span>{statistics.elapsedSeconds.toFixed(1)}s</span>
+          </p>
+          <button
+            className="typing-retry"
+            type="button"
+            onClick={resetSession}
+          >
+            Retry
+          </button>
+          <span className="typing-retry-shortcut">Ctrl + Enter</span>
+        </div>
       )}
 
       <input

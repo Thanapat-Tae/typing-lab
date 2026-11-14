@@ -119,6 +119,44 @@
   font-weight: 600;
 }
 
+.typing-session-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.typing-session-summary .typing-result {
+  margin-bottom: 0;
+}
+
+.typing-retry {
+  border: 1px solid rgba(155, 184, 232, 0.55);
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  background: rgba(155, 184, 232, 0.1);
+  color: #d6e3f5;
+  font: inherit;
+  cursor: pointer;
+}
+
+.typing-retry:hover {
+  background: rgba(155, 184, 232, 0.2);
+}
+
+.typing-retry:focus-visible {
+  outline: 2px solid #9bb8e8;
+  outline-offset: 3px;
+}
+
+.typing-retry-shortcut {
+  margin-top: -0.5rem;
+  color: rgba(214, 227, 245, 0.6);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 @media (max-width: 560px) {
   .typing-result {
     column-gap: 0.75rem;
