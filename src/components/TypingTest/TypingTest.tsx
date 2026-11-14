@@ -8,6 +8,14 @@ const passage = "The quiet moon shines above the sleeping city.";
 
 const words = passage.split(" ");
 
+interface TestStatistics {
+  wpm: number;
+  accuracy: number;
+  words: number;
+  characters: number;
+  elapsedSeconds: number;
+}
+
 function commonPrefixLength(left: string, right: string): number {
   let length = 0;
   while (
@@ -41,19 +49,18 @@ function TypingTest() {
 
   const [timeLeft, setTimeLeft] = useState(timeLimit);
   const [hasStarted, setHasStarted] = useState(false);
-  const [wpm, setWpm] = useState<number | null>(null);
-  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [statistics, setStatistics] = useState<TestStatistics | null>(null);
 
   const isFinished = currentWordIndex >= words.length;
   const isTimeUp = timeLeft === 0;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const startedAtRef = useRef<number | null>(null);
+  const stoppedAtRef = useRef<number | null>(null);
   const inputValueRef = useRef("");
   const isComposingRef = useRef(false);
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
-  const accuracyFrozenRef = useRef(false);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -102,23 +109,26 @@ function TypingTest() {
 
   useEffect(() => {
     if (!isFinished && !isTimeUp) return;
-
-    if (!accuracyFrozenRef.current) {
-      accuracyFrozenRef.current = true;
-      const { correct, total } = accuracyCountsRef.current;
-      setAccuracy(calculateAccuracy(correct, total));
-    }
+    if (stoppedAtRef.current !== null) return;
 
     if (startedAtRef.current === null) return;
 
     const stoppedAt = performance.now();
+    stoppedAtRef.current = stoppedAt;
     const elapsedMilliseconds = Math.max(0, stoppedAt - startedAtRef.current);
     const correctCharacters = countCorrectCharacters(
       words,
       completedWords,
       currentInput,
     );
-    setWpm(calculateWpm(correctCharacters, elapsedMilliseconds));
+    const { correct, total } = accuracyCountsRef.current;
+    setStatistics({
+      wpm: calculateWpm(correctCharacters, elapsedMilliseconds),
+      accuracy: calculateAccuracy(correct, total),
+      words: completedWords.length,
+      characters: correctCharacters,
+      elapsedSeconds: elapsedMilliseconds / 1000,
+    });
   }, [isFinished, isTimeUp, completedWords, currentInput]);
 
   function handleInput(value: string) {
@@ -318,10 +328,13 @@ function TypingTest() {
         })}
       </div>
 
-      {(wpm !== null || accuracy !== null) && (
+      {statistics !== null && (
         <p className="typing-result">
-          {wpm !== null && <span>{wpm.toFixed(1)} WPM</span>}
-          {accuracy !== null && <span>{accuracy.toFixed(1)}% accuracy</span>}
+          <span>{statistics.wpm.toFixed(1)} WPM</span>
+          <span>{statistics.accuracy.toFixed(1)}% accuracy</span>
+          <span>{statistics.words} words</span>
+          <span>{statistics.characters} chars</span>
+          <span>{statistics.elapsedSeconds.toFixed(1)}s</span>
         </p>
       )}
 
