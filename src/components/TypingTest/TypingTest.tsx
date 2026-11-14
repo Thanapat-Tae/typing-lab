@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { calculateTimeLimit } from "../../utils/calculateTimeLimit";
 import "./TypingTest.css";
 
@@ -18,6 +18,41 @@ function TypingTest() {
 
   const isFinished = currentWordIndex >= words.length;
   const isTimeUp = timeLeft === 0;
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) {
+        return;
+      }
+
+      if (event.key.length !== 1 && event.key !== "Backspace") {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+
+      if (target === inputRef.current || target?.isContentEditable) {
+        return;
+      }
+
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      inputRef.current?.focus();
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!hasStarted || isFinished || isTimeUp) {
@@ -63,7 +98,10 @@ function TypingTest() {
   }
 
   return (
-    <section className="typing-test">
+    <section
+      className="typing-test"
+      onClick={() => inputRef.current?.focus()}
+    >
       <div className="timer-container">
         <p
           className={`typing-timer ${
@@ -77,23 +115,30 @@ function TypingTest() {
 
       <div className="typing-passage">
         {words.map((word, wordIndex) => {
+          const isCurrentWord = wordIndex === currentWordIndex;
+          const showCaret = isCurrentWord && !isFinished && !isTimeUp;
+
           const typedWord =
             wordIndex < currentWordIndex
               ? completedWords[wordIndex]
-              : wordIndex === currentWordIndex
+              : isCurrentWord
                 ? currentInput
                 : "";
+
+          const expectedCharacters = word.split("");
+          const extraCharacters = (typedWord ?? "")
+            .slice(expectedCharacters.length)
+            .split("");
+          const caretIndex = (typedWord ?? "").length;
 
           return (
             <span
               key={wordIndex}
               className={
-                wordIndex === currentWordIndex
-                  ? "typing-word active-word"
-                  : "typing-word"
+                isCurrentWord ? "typing-word active-word" : "typing-word"
               }
             >
-              {word.split("").map((character, charIndex) => {
+              {expectedCharacters.map((character, charIndex) => {
                 const typedCharacter = typedWord?.[charIndex];
 
                 let className = "";
@@ -103,8 +148,42 @@ function TypingTest() {
                     typedCharacter === character ? "correct" : "incorrect";
                 }
 
+                if (showCaret) {
+                  if (caretIndex === charIndex) {
+                    className = `${className} caret-before`.trim();
+                  } else if (
+                    caretIndex === expectedCharacters.length &&
+                    extraCharacters.length === 0 &&
+                    charIndex === expectedCharacters.length - 1
+                  ) {
+                    className = `${className} caret-after`.trim();
+                  }
+                }
+
                 return (
                   <span key={charIndex} className={className}>
+                    {character}
+                  </span>
+                );
+              })}
+
+              {extraCharacters.map((character, extraIndex) => {
+                let className = "incorrect";
+
+                if (showCaret) {
+                  if (caretIndex === expectedCharacters.length + extraIndex) {
+                    className = `${className} caret-before`;
+                  } else if (
+                    caretIndex ===
+                      expectedCharacters.length + extraCharacters.length &&
+                    extraIndex === extraCharacters.length - 1
+                  ) {
+                    className = `${className} caret-after`;
+                  }
+                }
+
+                return (
+                  <span key={`extra-${extraIndex}`} className={className}>
                     {character}
                   </span>
                 );
@@ -115,6 +194,8 @@ function TypingTest() {
       </div>
 
       <input
+        ref={inputRef}
+        className="typing-input"
         type="text"
         value={currentInput}
         onChange={(event) => handleInput(event.target.value)}
@@ -123,6 +204,7 @@ function TypingTest() {
         autoComplete="off"
         autoCapitalize="off"
         spellCheck={false}
+        aria-label="Typing input"
       />
     </section>
   );
