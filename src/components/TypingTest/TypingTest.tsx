@@ -16,6 +16,8 @@ interface TestStatistics {
   elapsedSeconds: number;
 }
 
+type TypingMode = "normal" | "timer";
+
 function commonPrefixLength(left: string, right: string): number {
   let length = 0;
   while (
@@ -41,6 +43,7 @@ function commonSuffixLength(left: string, right: string): number {
 }
 
 function TypingTest() {
+  const [mode, setMode] = useState<TypingMode>("normal");
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentInput, setCurrentInput] = useState("");
   const [completedWords, setCompletedWords] = useState<string[]>([]);
@@ -53,7 +56,7 @@ function TypingTest() {
   const [resetVersion, setResetVersion] = useState(0);
 
   const isFinished = currentWordIndex >= words.length;
-  const isTimeUp = timeLeft === 0;
+  const isTimeUp = mode === "timer" && timeLeft === 0;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -79,6 +82,12 @@ function TypingTest() {
     accuracyCountsRef.current = { correct: 0, total: 0 };
     setResetVersion((previous) => previous + 1);
   }, [timeLimit]);
+
+  function handleModeChange(nextMode: TypingMode) {
+    if (nextMode === mode) return;
+    resetSession();
+    setMode(nextMode);
+  }
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -139,7 +148,7 @@ function TypingTest() {
   }, [resetVersion]);
 
   useEffect(() => {
-    if (!hasStarted || isFinished || isTimeUp) {
+    if (mode !== "timer" || !hasStarted || isFinished || isTimeUp) {
       return;
     }
 
@@ -148,7 +157,7 @@ function TypingTest() {
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [hasStarted, isFinished, isTimeUp]);
+  }, [mode, hasStarted, isFinished, isTimeUp]);
 
   useEffect(() => {
     if (!isFinished && !isTimeUp) return;
@@ -278,18 +287,49 @@ function TypingTest() {
   return (
     <section
       className="typing-test"
-      onClick={() => inputRef.current?.focus()}
+      onClick={(event) => {
+        const target = event.target;
+        if (
+          target instanceof HTMLElement &&
+          target.closest("button, input, select, textarea, a")
+        ) {
+          return;
+        }
+        inputRef.current?.focus();
+      }}
     >
-      <div className="timer-container">
-        <p
-          className={`typing-timer ${
-            timeLeft <= 10 ? "timer-warning" : ""
-          } ${!hasStarted ? "timer-hidden" : ""}`}
+      <div className="typing-mode-selector" role="group" aria-label="Typing mode">
+        <button
+          className="typing-mode-option"
+          type="button"
+          aria-pressed={mode === "normal"}
+          onClick={() => handleModeChange("normal")}
         >
-          <span aria-hidden="true">◷</span>
-          <span>{timeLeft}s</span>
-        </p>
+          Normal
+        </button>
+        <button
+          className="typing-mode-option"
+          type="button"
+          aria-pressed={mode === "timer"}
+          aria-label="Timer mode, coming soon"
+          disabled
+        >
+          Timer
+        </button>
       </div>
+
+      {mode === "timer" && (
+        <div className="timer-container">
+          <p
+            className={`typing-timer ${
+              timeLeft <= 10 ? "timer-warning" : ""
+            } ${!hasStarted ? "timer-hidden" : ""}`}
+          >
+            <span aria-hidden="true">◷</span>
+            <span>{timeLeft}s</span>
+          </p>
+        </div>
+      )}
 
       <div className="typing-passage">
         {words.map((word, wordIndex) => {
