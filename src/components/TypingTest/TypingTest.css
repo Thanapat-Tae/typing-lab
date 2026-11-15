@@ -129,6 +129,13 @@
   margin-bottom: 1.5rem;
 }
 
+.typing-passage-timer {
+  /* Three line boxes plus the two row gaps created by the passage's flex gap. */
+  height: calc(3lh + 1rem);
+  overflow: hidden;
+  align-content: flex-start;
+}
+
 .typing-word {
   border-radius: 4px;
   padding: 0 2px;
@@ -259,11 +266,42 @@
   outline-offset: 3px;
 }
 
+.typing-restart-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+}
+
 .typing-retry-shortcut {
-  margin-top: -0.5rem;
   color: rgba(214, 227, 245, 0.6);
   font-size: 0.8rem;
-  text-align: center;
+}
+
+.typing-rewind {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(214, 227, 245, 0.6);
+  font: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.typing-rewind:hover {
+  color: #d6e3f5;
+  background: rgba(155, 184, 232, 0.1);
+}
+
+.typing-rewind:focus-visible {
+  outline: 2px solid #9bb8e8;
+  outline-offset: 2px;
 }
 
 @media (max-width: 560px) {

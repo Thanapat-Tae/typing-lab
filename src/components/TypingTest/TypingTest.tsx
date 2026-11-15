@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
 import { generateWords } from "../../utils/generateWords";
@@ -107,6 +107,7 @@ function TypingTest() {
   const isTimeUp = mode === "timer" && hasStarted && timeLeft === 0;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const passageRef = useRef<HTMLDivElement>(null);
   const startedAtRef = useRef<number | null>(null);
   const stoppedAtRef = useRef<number | null>(null);
   const inputValueRef = useRef("");
@@ -121,6 +122,7 @@ function TypingTest() {
       focusTyping = true,
     ) => {
       setCurrentWordIndex(0);
+      if (passageRef.current) passageRef.current.scrollTop = 0;
       setCurrentInput("");
       setCompletedWords([]);
       setTimeLeft(
@@ -210,7 +212,7 @@ function TypingTest() {
         event.key === "Enter" &&
         !event.isComposing;
 
-      if (!isRetryShortcut || (!isFinished && !isTimeUp)) return;
+      if (!isRetryShortcut) return;
 
       if (
         event.target instanceof HTMLInputElement &&
@@ -293,6 +295,40 @@ function TypingTest() {
     mode,
     selectedDuration,
   ]);
+
+  useLayoutEffect(() => {
+    if (mode !== "timer") return;
+    const viewport = passageRef.current;
+    const activeWord = viewport?.querySelector<HTMLElement>(".active-word");
+    if (!viewport || !activeWord) return;
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const words = Array.from(viewport.children) as HTMLElement[];
+    const contentTop = (word: HTMLElement) =>
+      word.getBoundingClientRect().top -
+      viewportRect.top -
+      viewport.clientTop +
+      viewport.scrollTop;
+    const rowTops = [...new Set(words.map((word) => Math.round(contentTop(word))))].sort(
+      (left, right) => left - right,
+    );
+    if (rowTops.length < 3) return;
+
+    const lineAdvance = rowTops[1] - rowTops[0];
+    const activeTop = Math.round(contentTop(activeWord));
+    const activeRow = rowTops.indexOf(activeTop);
+    if (lineAdvance <= 0 || activeRow < 0) return;
+
+    let firstVisibleRow = 0;
+    for (let index = 0; index < rowTops.length; index += 1) {
+      if (rowTops[index] <= viewport.scrollTop + 1) firstVisibleRow = index;
+      else break;
+    }
+
+    if (activeRow < firstVisibleRow + 2) return;
+    const rowsToAdvance = activeRow - firstVisibleRow - 1;
+    viewport.scrollTop += rowsToAdvance * lineAdvance;
+  }, [mode, currentWordIndex, timerWords.length]);
 
   function handleInput(value: string) {
     if (isFinished || isTimeUp || !isDurationValid) return;
@@ -468,7 +504,11 @@ function TypingTest() {
                 className="typing-duration-option"
                 type="button"
                 aria-pressed={durationOption === duration}
-                onClick={() => handleDurationChange(duration)}
+                onClick={() =>
+                  durationOption === duration
+                    ? resetSession("timer", duration)
+                    : handleDurationChange(duration)
+                }
               >
                 {duration}s
               </button>
@@ -477,7 +517,11 @@ function TypingTest() {
               className="typing-duration-option"
               type="button"
               aria-pressed={durationOption === "custom"}
-              onClick={() => handleDurationChange("custom")}
+              onClick={() =>
+                durationOption === "custom"
+                  ? resetSession("timer", customDuration ?? Number.NaN)
+                  : handleDurationChange("custom")
+              }
             >
               Custom
             </button>
@@ -529,7 +573,7 @@ function TypingTest() {
         </div>
       )}
 
-      <div className="typing-passage">
+      <div ref={passageRef} className={`typing-passage ${mode === "timer" ? "typing-passage-timer" : ""}`}>
         {activeWords.map((word, wordIndex) => {
           const isCurrentWord = wordIndex === currentWordIndex;
           const showCaret = isCurrentWord && !isFinished && !isTimeUp;
@@ -609,6 +653,21 @@ function TypingTest() {
         })}
       </div>
 
+      <div className="typing-restart-row">
+        <button
+          className="typing-rewind"
+          type="button"
+          aria-label="Restart typing test"
+          onClick={() => resetSession()}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 4v6h6" />
+            <path d="M4.5 14a8 8 0 1 0 2-7L3 10" />
+          </svg>
+        </button>
+        <span className="typing-retry-shortcut">Restart · Ctrl + Enter</span>
+      </div>
+
       {statistics !== null && (
         <div className="typing-session-summary">
           <p className="typing-result">
@@ -625,7 +684,6 @@ function TypingTest() {
           >
             Retry
           </button>
-          <span className="typing-retry-shortcut">Ctrl + Enter</span>
         </div>
       )}
 
