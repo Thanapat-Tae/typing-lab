@@ -23,3 +23,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Development tool directories (local only)
+# Local development tools
+/.codegraph/
+/.serena/
