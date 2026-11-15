@@ -12,11 +12,6 @@
   gap: 1.25rem;
 }
 
-/* Match Timer Mode's duration and clock rows when the passage follows directly. */
-.typing-mode-selector:has(+ .typing-passage) {
-  margin-bottom: calc(2lh + 0.75rem);
-}
-
 .typing-mode-option {
   padding: 0;
   border: 0;
@@ -45,12 +40,70 @@
   cursor: not-allowed;
 }
 
+.typing-length-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.typing-length-option {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #9ba8b8;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.typing-length-option[aria-pressed="true"] {
+  color: #d6e3f5;
+}
+
+.typing-length-option:not(:disabled):hover {
+  color: #b8c9e4;
+}
+
+.typing-length-option:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid rgba(155, 184, 232, 0.75);
+  outline-offset: 3px;
+}
+
+.typing-length-option:disabled {
+  color: #8491a2;
+  cursor: not-allowed;
+}
+
+.typing-controls {
+  margin-bottom: 1.5rem;
+}
+
+.typing-control-row {
+  --typing-control-row-height: calc(1lh + 0.45rem);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 1rem;
+  min-height: var(--typing-control-row-height);
+}
+
+.typing-timer-controls {
+  margin: 0;
+}
+
 .typing-duration-selector {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.85rem;
-  margin: -0.75rem 0 0;
+  min-width: 0;
+  margin: 0;
 }
 
 .typing-duration-option {
@@ -83,6 +136,7 @@
 .typing-custom-duration input {
   box-sizing: border-box;
   width: 4.25rem;
+  height: var(--typing-control-row-height);
   padding: 0.15rem 0.35rem;
   border: 1px solid rgba(155, 184, 232, 0.4);
   border-radius: 4px;
@@ -102,9 +156,11 @@
 }
 
 .typing-duration-error {
-  margin: -0.6rem 0 1rem;
+  min-height: 1lh;
+  margin: 0;
   color: #fca5a5;
   font-size: 0.85rem;
+  text-align: left;
 }
 
 .visually-hidden {
@@ -129,7 +185,8 @@
   margin-bottom: 1.5rem;
 }
 
-.typing-passage-timer {
+.typing-passage-rolling {
+  position: relative;
   /* Three line boxes plus the two row gaps created by the passage's flex gap. */
   height: calc(3lh + 1rem);
   overflow: hidden;
@@ -137,8 +194,13 @@
 }
 
 .typing-word {
+  box-sizing: border-box;
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
   border-radius: 4px;
   padding: 0 2px;
+  overflow-wrap: anywhere;
 }
 
 .typing-word .caret-before,
@@ -197,6 +259,25 @@
   color: #4ade80;
 }
 
+.typing-word-completed {
+  color: #66758c;
+}
+
+.typing-word-completed .correct {
+  color: #66758c;
+}
+
+.typing-character-missing {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+  text-decoration: underline wavy currentColor;
+  text-underline-offset: 0.2em;
+}
+
+.typing-word-completed-incorrect {
+  color: #f87171;
+}
+
 .incorrect {
   color: #f87171;
   background-color: rgba(248, 113, 113, 0.12);
@@ -206,6 +287,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 .typing-timer {
@@ -218,6 +300,11 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: #9bb8e8;
+  white-space: nowrap;
+}
+
+.typing-timer-placeholder {
+  visibility: hidden;
 }
 
 .typing-timer.timer-warning {
@@ -305,6 +392,34 @@
 }
 
 @media (max-width: 560px) {
+  .typing-control-row {
+    align-items: start;
+    min-height: calc(3lh + 1rem);
+  }
+
+  .typing-length-selector,
+  .typing-duration-selector {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    align-content: start;
+    gap: 0.5rem 0.85rem;
+  }
+
+  .typing-duration-error {
+    min-height: 2lh;
+  }
+}
+
+@media (max-width: 380px) {
+  .typing-control-row {
+    min-height: calc(4lh + 1.5rem);
+  }
+
+  .typing-length-selector,
+  .typing-duration-selector {
+    grid-template-columns: repeat(2, max-content);
+  }
+
   .typing-result {
     column-gap: 0.75rem;
     row-gap: 0.25rem;

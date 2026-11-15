@@ -2,13 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
 import { generateWords } from "../../utils/generateWords";
+import type { Passage, PassageLength } from "../../data/passages";
+import { selectRandomPassage, getPassageCountsByLength } from "../../utils/passageUtils";
 import "./TypingTest.css";
 
-const passage = "The quiet moon shines above the sleeping city.";
-
-const normalWords = passage.split(" ");
 const initialTimerBatchSize = 50;
 const timerRefillThreshold = 10;
+const maxExtraCharacters = 5;
 const timerPresets = [15, 30, 60, 120, 150] as const;
 
 interface TestStatistics {
@@ -21,6 +21,17 @@ interface TestStatistics {
 
 type TypingMode = "normal" | "timer";
 type TimerDurationOption = (typeof timerPresets)[number] | "custom";
+
+const lengthOptions: PassageLength[] = ["short", "medium", "long", "extra", "ultimate"];
+const defaultLength: PassageLength = "medium";
+
+const lengthLabels: Record<PassageLength, string> = {
+  short: "Short",
+  medium: "Medium",
+  long: "Long",
+  extra: "Extra",
+  ultimate: "Ultimate",
+};
 
 function commonPrefixLength(left: string, right: string): number {
   let length = 0;
@@ -82,12 +93,19 @@ function getCappedElapsedMilliseconds(
 function TypingTest() {
   const [mode, setMode] = useState<TypingMode>("normal");
   const [timerWords, setTimerWords] = useState<string[]>([]);
-  const [durationOption, setDurationOption] =
-    useState<TimerDurationOption>(30);
+  const [durationOption, setDurationOption] = useState<TimerDurationOption>(30);
   const [customDurationInput, setCustomDurationInput] = useState("30");
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentInput, setCurrentInput] = useState("");
   const [completedWords, setCompletedWords] = useState<string[]>([]);
+  const [normalPassage, setNormalPassage] = useState<Passage | null>(() => {
+    try {
+      return selectRandomPassage(defaultLength);
+    } catch {
+      return null;
+    }
+  });
+  const [selectedLength, setSelectedLength] = useState<PassageLength>(defaultLength);
 
   const customDuration = isPositiveSafeIntegerSeconds(customDurationInput);
   const isCustomDurationValid = customDuration !== null;
@@ -95,6 +113,8 @@ function TypingTest() {
     durationOption === "custom" ? customDuration ?? 0 : durationOption;
   const isDurationValid =
     durationOption !== "custom" || isCustomDurationValid;
+
+  const normalWords = normalPassage ? normalPassage.text.split(" ") : [];
   const activeWords = mode === "normal" ? normalWords : timerWords;
 
   const [timeLeft, setTimeLeft] = useState(30);
@@ -115,11 +135,26 @@ function TypingTest() {
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
 
+  const passageCounts = getPassageCountsByLength();
+
+  const selectPassageForLength = useCallback((length: PassageLength) => {
+    try {
+      const passage = selectRandomPassage(length);
+      setNormalPassage(passage);
+      setSelectedLength(length);
+    } catch {
+      // If no passages for this length, clear the passage
+      setNormalPassage(null);
+      setSelectedLength(length);
+    }
+  }, []);
+
   const resetSession = useCallback(
     (
       nextMode: TypingMode = mode,
       nextDuration = selectedDuration,
       focusTyping = true,
+      nextLength = selectedLength,
     ) => {
       setCurrentWordIndex(0);
       if (passageRef.current) passageRef.current.scrollTop = 0;
@@ -136,6 +171,11 @@ function TypingTest() {
         nextMode === "timer" ? generateWords(initialTimerBatchSize) : [],
       );
 
+      // When entering Normal mode (or retrying in Normal), select a new passage
+      if (nextMode === "normal") {
+        selectPassageForLength(nextLength);
+      }
+
       startedAtRef.current = null;
       stoppedAtRef.current = null;
       inputValueRef.current = "";
@@ -146,12 +186,14 @@ function TypingTest() {
         setResetVersion((previous) => previous + 1);
       }
     },
-    [mode, selectedDuration],
+    [mode, selectedDuration, selectedLength, selectPassageForLength],
   );
 
   function handleModeChange(nextMode: TypingMode) {
     if (nextMode === mode) return;
-    resetSession(nextMode, nextMode === "timer" ? selectedDuration : 0);
+    // When switching to Normal, pick a passage for the current length
+    const nextDuration = nextMode === "timer" ? selectedDuration : 0;
+    resetSession(nextMode, nextDuration);
     setMode(nextMode);
   }
 
@@ -167,6 +209,11 @@ function TypingTest() {
     setCustomDurationInput(value);
     const nextDuration = isPositiveSafeIntegerSeconds(value);
     resetSession("timer", nextDuration ?? Number.NaN, false);
+  }
+
+  function handleLengthChange(nextLength: PassageLength) {
+    if (mode !== "normal" || passageCounts[nextLength] === 0) return;
+    resetSession("normal", 0, true, nextLength);
   }
 
   useEffect(() => {
@@ -297,38 +344,68 @@ function TypingTest() {
   ]);
 
   useLayoutEffect(() => {
-    if (mode !== "timer") return;
     const viewport = passageRef.current;
     const activeWord = viewport?.querySelector<HTMLElement>(".active-word");
     if (!viewport || !activeWord) return;
 
     const viewportRect = viewport.getBoundingClientRect();
-    const words = Array.from(viewport.children) as HTMLElement[];
+    const words = Array.from(viewport.children).filter(
+      (element): element is HTMLElement => element instanceof HTMLElement,
+    );
     const contentTop = (word: HTMLElement) =>
       word.getBoundingClientRect().top -
       viewportRect.top -
       viewport.clientTop +
       viewport.scrollTop;
-    const rowTops = [...new Set(words.map((word) => Math.round(contentTop(word))))].sort(
-      (left, right) => left - right,
-    );
+    const getCharacterElements = (word: HTMLElement) =>
+      Array.from(word.children).flatMap((element) => {
+        if (!(element instanceof HTMLElement)) return [];
+        if (element.classList.contains("typing-word-extra")) {
+          return Array.from(element.children).filter(
+            (character): character is HTMLElement => character instanceof HTMLElement,
+          );
+        }
+        return [element];
+      });
+    const firstCharacters = words.flatMap((word) => {
+      const firstElement = word.firstElementChild;
+      if (!(firstElement instanceof HTMLElement)) return [];
+      if (firstElement.classList.contains("typing-word-extra")) {
+        const firstExtra = firstElement.firstElementChild;
+        return firstExtra instanceof HTMLElement ? [firstExtra] : [];
+      }
+      return [firstElement];
+    });
+    const activeCharacterElements = getCharacterElements(activeWord);
+    const rowTops = [
+      ...new Set(
+        [
+          ...firstCharacters.map((character) => contentTop(character)),
+          ...activeCharacterElements.map((character) => contentTop(character)),
+        ].map(Math.round),
+      ),
+    ].sort((left, right) => left - right);
     if (rowTops.length < 3) return;
 
     const lineAdvance = rowTops[1] - rowTops[0];
-    const activeTop = Math.round(contentTop(activeWord));
-    const activeRow = rowTops.indexOf(activeTop);
+    const activeCaret = activeWord.querySelector<HTMLElement>(
+      ".caret-before, .caret-after",
+    );
+    const activeTop = Math.round(contentTop(activeCaret ?? activeWord));
+    const activeRow = rowTops.findIndex((rowTop) => rowTop === activeTop);
     if (lineAdvance <= 0 || activeRow < 0) return;
 
-    let firstVisibleRow = 0;
-    for (let index = 0; index < rowTops.length; index += 1) {
-      if (rowTops[index] <= viewport.scrollTop + 1) firstVisibleRow = index;
-      else break;
-    }
+    const firstVisibleRow = rowTops.reduce((nearestIndex, rowTop, index) =>
+      Math.abs(rowTop - viewport.scrollTop) <
+      Math.abs(rowTops[nearestIndex] - viewport.scrollTop)
+        ? index
+        : nearestIndex,
+    0);
 
     if (activeRow < firstVisibleRow + 2) return;
     const rowsToAdvance = activeRow - firstVisibleRow - 1;
     viewport.scrollTop += rowsToAdvance * lineAdvance;
-  }, [mode, currentWordIndex, timerWords.length]);
+  }, [mode, currentWordIndex, currentInput, timerWords.length]);
 
   function handleInput(value: string) {
     if (isFinished || isTimeUp || !isDurationValid) return;
@@ -359,17 +436,22 @@ function TypingTest() {
       return;
     }
 
-    // Only a single separator after an exactly correct word is accepted.
+    // Accept one separator after any non-empty word. Empty submissions and
+    // repeated spaces are rejected so they cannot skip words accidentally.
     if (value.endsWith(" ")) {
-      if (
-        previousInput !== expectedWord ||
-        value !== `${expectedWord} `
-      ) {
+      if (previousInput.length === 0 || value !== `${previousInput} `) {
         setCurrentInput(previousInput);
         return;
       }
 
-      recordCharacterAttempts(previousInput, value, expectedWord, true);
+      const hasExpectedSeparator =
+        mode === "timer" || currentWordIndex < activeWords.length - 1;
+      recordCharacterAttempts(
+        previousInput,
+        hasExpectedSeparator ? value : previousInput,
+        expectedWord,
+        hasExpectedSeparator,
+      );
       inputValueRef.current = "";
       startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, previousInput]);
@@ -391,6 +473,14 @@ function TypingTest() {
       }
       setCurrentWordIndex(nextWordIndex);
       setCurrentInput("");
+      return;
+    }
+
+    if (
+      value.length > expectedWord.length + maxExtraCharacters &&
+      value.length > previousInput.length
+    ) {
+      setCurrentInput(previousInput);
       return;
     }
 
@@ -491,123 +581,159 @@ function TypingTest() {
         </button>
       </div>
 
-      {mode === "timer" && (
-        <>
-          <div
-            className="typing-duration-selector"
-            role="group"
-            aria-label="Timer duration"
-          >
-            {timerPresets.map((duration) => (
+      <div className="typing-controls">
+        {mode === "timer" ? (
+          <div className="typing-control-row typing-timer-controls">
+            <div
+              className="typing-duration-selector"
+              role="group"
+              aria-label="Timer duration"
+            >
+              {timerPresets.map((duration) => (
+                <button
+                  key={duration}
+                  className="typing-duration-option"
+                  type="button"
+                  aria-pressed={durationOption === duration}
+                  onClick={() =>
+                    durationOption === duration
+                      ? resetSession("timer", duration)
+                      : handleDurationChange(duration)
+                  }
+                >
+                  {duration}s
+                </button>
+              ))}
               <button
-                key={duration}
                 className="typing-duration-option"
                 type="button"
-                aria-pressed={durationOption === duration}
+                aria-pressed={durationOption === "custom"}
                 onClick={() =>
-                  durationOption === duration
-                    ? resetSession("timer", duration)
-                    : handleDurationChange(duration)
+                  durationOption === "custom"
+                    ? resetSession("timer", customDuration ?? Number.NaN)
+                    : handleDurationChange("custom")
                 }
               >
-                {duration}s
+                Custom
               </button>
-            ))}
-            <button
-              className="typing-duration-option"
-              type="button"
-              aria-pressed={durationOption === "custom"}
-              onClick={() =>
-                durationOption === "custom"
-                  ? resetSession("timer", customDuration ?? Number.NaN)
-                  : handleDurationChange("custom")
-              }
-            >
-              Custom
-            </button>
-            {durationOption === "custom" && (
-              <label className="typing-custom-duration">
-                <span className="visually-hidden">
-                  Custom duration in positive whole seconds
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  inputMode="numeric"
-                  value={customDurationInput}
-                  aria-invalid={!isCustomDurationValid}
-                  aria-describedby={
-                    !isCustomDurationValid ? "custom-duration-error" : undefined
-                  }
-                  onChange={(event) =>
-                    handleCustomDurationInput(event.target.value)
-                  }
-                />
-                <span aria-hidden="true">s</span>
-              </label>
-            )}
+              {durationOption === "custom" && (
+                <label className="typing-custom-duration">
+                  <span className="visually-hidden">
+                    Custom duration in positive whole seconds
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    value={customDurationInput}
+                    aria-invalid={!isCustomDurationValid}
+                    aria-describedby={
+                      !isCustomDurationValid ? "custom-duration-error" : undefined
+                    }
+                    onChange={(event) =>
+                      handleCustomDurationInput(event.target.value)
+                    }
+                  />
+                  <span aria-hidden="true">s</span>
+                </label>
+              )}
+            </div>
+
+            <div className="timer-container">
+              <p
+                className={`typing-timer ${
+                  hasStarted && timeLeft <= 10 ? "timer-warning" : ""
+                }`}
+              >
+                <span aria-hidden="true">&#9719;</span>
+                <span>{timeLeft}s</span>
+              </p>
+            </div>
           </div>
-          {durationOption === "custom" && !isCustomDurationValid && (
-            <p
-              className="typing-duration-error"
-              id="custom-duration-error"
-              role="status"
-            >
-              Enter a positive whole number of seconds.
-            </p>
-          )}
-        </>
-      )}
-
-      {mode === "timer" && (
-        <div className="timer-container">
-          <p
-            className={`typing-timer ${
-              hasStarted && timeLeft <= 10 ? "timer-warning" : ""
-            }`}
+        ) : (
+          <div
+            className="typing-control-row typing-normal-controls"
           >
-            <span aria-hidden="true">◷</span>
-            <span>{timeLeft}s</span>
-          </p>
-        </div>
-      )}
+            <div
+              className="typing-length-selector"
+              role="group"
+              aria-label="Passage length"
+            >
+              {lengthOptions.map((length) => (
+                <button
+                  key={length}
+                  className="typing-length-option"
+                  type="button"
+                  aria-pressed={selectedLength === length}
+                  disabled={passageCounts[length] === 0}
+                  onClick={() => handleLengthChange(length)}
+                >
+                  {lengthLabels[length]}
+                </button>
+              ))}
+            </div>
+            <div
+              className="timer-container typing-timer-placeholder"
+              aria-hidden="true"
+              >
+              <p className="typing-timer">
+                <span>&#9719;</span>
+                <span>{selectedDuration}s</span>
+              </p>
+            </div>
+          </div>
+        )}
 
-      <div ref={passageRef} className={`typing-passage ${mode === "timer" ? "typing-passage-timer" : ""}`}>
+        <p
+          id="custom-duration-error"
+          className="typing-duration-error"
+          role="status"
+          aria-live="polite"
+          aria-hidden={mode === "normal"}
+        >
+          {mode === "timer" && !isDurationValid &&
+            "Enter a positive whole number of seconds."}
+        </p>
+      </div>
+
+      <div
+        ref={passageRef}
+        className="typing-passage typing-passage-rolling"
+      >
         {activeWords.map((word, wordIndex) => {
           const isCurrentWord = wordIndex === currentWordIndex;
+          const isCompletedWord = wordIndex < currentWordIndex;
+          const isIncorrectCompletedWord =
+            isCompletedWord && completedWords[wordIndex] !== word;
           const showCaret = isCurrentWord && !isFinished && !isTimeUp;
 
-          const typedWord =
-            wordIndex < currentWordIndex
-              ? completedWords[wordIndex]
-              : isCurrentWord
-                ? currentInput
-                : "";
-
           const expectedCharacters = word.split("");
-          const extraCharacters = (typedWord ?? "")
-            .slice(expectedCharacters.length)
-            .split("");
-          const caretIndex = (typedWord ?? "").length;
+          const typedWord = isCurrentWord
+            ? currentInput
+            : isCompletedWord
+              ? completedWords[wordIndex] ?? ""
+              : "";
+          const typedCharacters = typedWord.split("");
+          const extraCharacters = typedCharacters.slice(expectedCharacters.length);
+          const caretIndex = typedWord.length;
 
           return (
             <span
               key={wordIndex}
-              className={
-                isCurrentWord ? "typing-word active-word" : "typing-word"
-              }
+              className={`typing-word ${isCurrentWord ? "active-word" : ""} ${
+                isCompletedWord ? "typing-word-completed" : ""
+              } ${isIncorrectCompletedWord ? "typing-word-completed-incorrect" : ""}`}
             >
               {expectedCharacters.map((character, charIndex) => {
-                const typedCharacter = typedWord?.[charIndex];
-
                 let className = "";
-
+                const typedCharacter = typedCharacters[charIndex];
                 if (typedCharacter !== undefined) {
                   className =
                     typedCharacter === character ? "correct" : "incorrect";
+                } else if (isCompletedWord) {
+                  className = "typing-character-missing";
                 }
-
                 if (showCaret) {
                   if (caretIndex === charIndex) {
                     className = `${className} caret-before`.trim();
@@ -619,40 +745,41 @@ function TypingTest() {
                     className = `${className} caret-after`.trim();
                   }
                 }
-
                 return (
                   <span key={charIndex} className={className}>
                     {character}
                   </span>
                 );
               })}
+              {extraCharacters.length > 0 && (
+                <>
+                <span className="typing-word-extra">
+                  {extraCharacters.map((character, extraIndex) => {
+                    let className = "incorrect";
+                    if (showCaret) {
+                      if (caretIndex === expectedCharacters.length + extraIndex) {
+                        className = `${className} caret-before`;
+                      } else if (extraIndex === extraCharacters.length - 1) {
+                        className = `${className} caret-after`;
+                      }
+                    }
+                    return (
+                      <span
+                        key={`extra-${extraIndex}`}
+                        className={className}
+                      >
+                        {character}
+                      </span>
+                    );
+                  })}
+                </span>
 
-              {extraCharacters.map((character, extraIndex) => {
-                let className = "incorrect";
-
-                if (showCaret) {
-                  if (caretIndex === expectedCharacters.length + extraIndex) {
-                    className = `${className} caret-before`;
-                  } else if (
-                    caretIndex ===
-                      expectedCharacters.length + extraCharacters.length &&
-                    extraIndex === extraCharacters.length - 1
-                  ) {
-                    className = `${className} caret-after`;
-                  }
-                }
-
-                return (
-                  <span key={`extra-${extraIndex}`} className={className}>
-                    {character}
-                  </span>
-                );
-              })}
+                </>
+              )}
             </span>
           );
         })}
       </div>
-
       <div className="typing-restart-row">
         <button
           className="typing-rewind"
@@ -667,7 +794,6 @@ function TypingTest() {
         </button>
         <span className="typing-retry-shortcut">Restart · Ctrl + Enter</span>
       </div>
-
       {statistics !== null && (
         <div className="typing-session-summary">
           <p className="typing-result">
@@ -686,7 +812,6 @@ function TypingTest() {
           </button>
         </div>
       )}
-
       <input
         ref={inputRef}
         className="typing-input"
@@ -719,5 +844,4 @@ function TypingTest() {
     </section>
   );
 }
-
 export default TypingTest;
