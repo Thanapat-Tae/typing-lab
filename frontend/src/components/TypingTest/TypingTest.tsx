@@ -135,6 +135,8 @@ function TypingTest() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const passageRef = useRef<HTMLDivElement>(null);
+  const animatedCaretRef = useRef<HTMLDivElement>(null);
+  const rollingViewportMeasureRef = useRef<(() => void) | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const stoppedAtRef = useRef<number | null>(null);
   const inputValueRef = useRef("");
@@ -143,7 +145,8 @@ function TypingTest() {
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
   const restartCooldownRef = useRef<number | null>(null);
   const restartAnimationRef = useRef<Animation | null>(null);
-
+  const caretPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const caretTransitionDisabledRef = useRef(false);
 
   const resetSession = useCallback(
     (
@@ -184,6 +187,10 @@ function TypingTest() {
 
       setCurrentWordIndex(0);
       if (passageRef.current) passageRef.current.scrollTop = 0;
+      // Disable caret transition for instant reposition on restart/mode change
+      caretTransitionDisabledRef.current = true;
+      // Reset caret position tracking
+      caretPositionRef.current = null;
       setCurrentInput("");
       setCompletedWords([]);
       setTimeLeft(
@@ -395,66 +402,146 @@ function TypingTest() {
   useLayoutEffect(() => {
     const viewport = passageRef.current;
     const activeWord = viewport?.querySelector<HTMLElement>(".active-word");
-    if (!viewport || !activeWord) return;
+    const animatedCaret = animatedCaretRef.current;
+    if (!viewport || !animatedCaret) return;
 
-    const viewportRect = viewport.getBoundingClientRect();
-    const words = Array.from(viewport.children).filter(
-      (element): element is HTMLElement => element instanceof HTMLElement,
-    );
-    const contentTop = (word: HTMLElement) =>
-      word.getBoundingClientRect().top -
-      viewportRect.top -
-      viewport.clientTop +
-      viewport.scrollTop;
-    const getCharacterElements = (word: HTMLElement) =>
-      Array.from(word.children).flatMap((element) => {
-        if (!(element instanceof HTMLElement)) return [];
-        if (element.classList.contains("typing-word-extra")) {
-          return Array.from(element.children).filter(
-            (character): character is HTMLElement => character instanceof HTMLElement,
-          );
-        }
-        return [element];
-      });
-    const firstCharacters = words.flatMap((word) => {
-      const firstElement = word.firstElementChild;
-      if (!(firstElement instanceof HTMLElement)) return [];
-      if (firstElement.classList.contains("typing-word-extra")) {
-        const firstExtra = firstElement.firstElementChild;
-        return firstExtra instanceof HTMLElement ? [firstExtra] : [];
+    const measureRollingViewport = () => {
+      if (!activeWord) {
+        animatedCaret.style.visibility = "hidden";
+        caretPositionRef.current = null;
+        return;
       }
-      return [firstElement];
+
+      const caretMarker = activeWord.querySelector<HTMLElement>(
+        ".caret-before, .caret-after",
+      );
+      if (!caretMarker) {
+        animatedCaret.style.visibility = "hidden";
+        caretPositionRef.current = null;
+        return;
+      }
+
+      const isCaretAfter = caretMarker.classList.contains("caret-after");
+      // An empty caret-after marker has no text box. Anchor it to the end of
+      // the preceding character while retaining the after-character edge.
+      const caretElement =
+        isCaretAfter &&
+        !caretMarker.textContent &&
+        caretMarker.previousElementSibling instanceof HTMLElement
+          ? caretMarker.previousElementSibling
+          : caretMarker;
+      const viewportRect = viewport.getBoundingClientRect();
+      const wordRect = activeWord.getBoundingClientRect();
+      const caretRect = caretElement.getBoundingClientRect();
+      const viewportContentLeft = viewportRect.left + viewport.clientLeft;
+      const viewportContentTop = viewportRect.top + viewport.clientTop;
+      const caretViewportLeft =
+        (isCaretAfter ? caretRect.right : caretRect.left) - viewportContentLeft;
+      let caretViewportTop = caretRect.top - viewportContentTop;
+      const wordTop = wordRect.top - viewportContentTop;
+      const styles = window.getComputedStyle(viewport);
+      const lineHeight = Number.parseFloat(styles.lineHeight);
+      const fontSize = Number.parseFloat(styles.fontSize);
+      const rowGap = Number.parseFloat(styles.rowGap);
+
+      if (
+        !Number.isFinite(lineHeight) ||
+        lineHeight <= 0 ||
+        !Number.isFinite(fontSize) ||
+        fontSize <= 0 ||
+        !Number.isFinite(rowGap) ||
+        rowGap < 0
+      ) {
+        return;
+      }
+
+      // Match the original caret's 0.1em inset within the active character span.
+      const caretInset = fontSize * 0.1;
+      const caretHeight = Math.max(0, caretRect.height - caretInset * 2);
+
+      // Keep the caret visible if responsive reflow moves it above the viewport.
+      if (caretViewportTop < 0) {
+        const previousScrollTop = viewport.scrollTop;
+        viewport.scrollTop = Math.max(0, previousScrollTop + caretViewportTop);
+        caretViewportTop -= viewport.scrollTop - previousScrollTop;
+      }
+
+      // Advance once the caret enters the third visual line. Wrapped lines
+      // inside the active word have no flex row gap; following rows do.
+      const thirdLineThreshold = 2 * lineHeight;
+      if (caretViewportTop >= thirdLineThreshold) {
+        const wrapsInsideActiveWord = caretViewportTop - wordTop > lineHeight / 2;
+        const lineAdvance = wrapsInsideActiveWord
+          ? lineHeight
+          : lineHeight + rowGap;
+
+        while (caretViewportTop >= thirdLineThreshold) {
+          const previousScrollTop = viewport.scrollTop;
+          viewport.scrollTop += lineAdvance;
+          const actualAdvance = viewport.scrollTop - previousScrollTop;
+          if (actualAdvance <= 0) break;
+          caretViewportTop -= actualAdvance;
+        }
+      }
+
+      const caretViewportY = caretViewportTop;
+      const caretContentLeft = caretViewportLeft + viewport.scrollLeft - 1;
+      const caretContentTop = caretViewportY + viewport.scrollTop + caretInset;
+      const nextCaretHeight = `${caretHeight}px`;
+      if (animatedCaret.style.height !== nextCaretHeight) {
+        animatedCaret.style.height = nextCaretHeight;
+      }
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      const isInstantReposition = caretTransitionDisabledRef.current;
+      const previousPosition = caretPositionRef.current;
+      const isLineWrap =
+        previousPosition !== null &&
+        Math.abs(caretViewportY - previousPosition.y) > lineHeight / 2;
+
+      if (isInstantReposition || isLineWrap || prefersReducedMotion) {
+        animatedCaret.style.transition = "none";
+        animatedCaret.style.transform =
+          `translate(${caretContentLeft}px, ${caretContentTop}px)`;
+        // Apply the instant position before restoring the normal transition.
+        void animatedCaret.offsetHeight;
+        animatedCaret.style.transition = "";
+      } else {
+        animatedCaret.style.transition =
+          "transform 80ms cubic-bezier(0.2, 0, 0, 1)";
+        animatedCaret.style.transform =
+          `translate(${caretContentLeft}px, ${caretContentTop}px)`;
+      }
+
+      caretPositionRef.current = { x: caretViewportLeft, y: caretViewportY };
+      animatedCaret.style.visibility = "visible";
+      if (caretTransitionDisabledRef.current) {
+        caretTransitionDisabledRef.current = false;
+      }
+    };
+
+    rollingViewportMeasureRef.current = measureRollingViewport;
+    measureRollingViewport();
+
+    return () => {
+      if (rollingViewportMeasureRef.current === measureRollingViewport) {
+        rollingViewportMeasureRef.current = null;
+      }
+    };
+  }, [activeWords, mode, currentWordIndex, currentInput, timerWords.length]);
+
+  useEffect(() => {
+    const viewport = passageRef.current;
+    if (!viewport || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      rollingViewportMeasureRef.current?.();
     });
-    const activeCharacterElements = getCharacterElements(activeWord);
-    const rowTops = [
-      ...new Set(
-        [
-          ...firstCharacters.map((character) => contentTop(character)),
-          ...activeCharacterElements.map((character) => contentTop(character)),
-        ].map(Math.round),
-      ),
-    ].sort((left, right) => left - right);
-    if (rowTops.length < 3) return;
+    observer.observe(viewport);
 
-    const lineAdvance = rowTops[1] - rowTops[0];
-    const activeCaret = activeWord.querySelector<HTMLElement>(
-      ".caret-before, .caret-after",
-    );
-    const activeTop = Math.round(contentTop(activeCaret ?? activeWord));
-    const activeRow = rowTops.findIndex((rowTop) => rowTop === activeTop);
-    if (lineAdvance <= 0 || activeRow < 0) return;
-
-    const firstVisibleRow = rowTops.reduce((nearestIndex, rowTop, index) =>
-      Math.abs(rowTop - viewport.scrollTop) <
-      Math.abs(rowTops[nearestIndex] - viewport.scrollTop)
-        ? index
-        : nearestIndex,
-    0);
-
-    if (activeRow < firstVisibleRow + 2) return;
-    const rowsToAdvance = activeRow - firstVisibleRow - 1;
-    viewport.scrollTop += rowsToAdvance * lineAdvance;
-  }, [mode, currentWordIndex, currentInput, timerWords.length]);
+    return () => observer.disconnect();
+  }, []);
 
   function handleInput(value: string) {
     if (isFinished || isTimeUp || !isDurationValid) return;
@@ -744,6 +831,13 @@ function TypingTest() {
         ref={passageRef}
         className="typing-passage typing-passage-rolling"
       >
+        <div
+          ref={animatedCaretRef}
+          className={`typing-animated-caret ${
+            hasStarted ? "typing-animated-caret-started" : ""
+          }`}
+          aria-hidden="true"
+        />
         {activeWords.map((word, wordIndex) => {
           const isCurrentWord = wordIndex === currentWordIndex;
           const isCompletedWord = wordIndex < currentWordIndex;

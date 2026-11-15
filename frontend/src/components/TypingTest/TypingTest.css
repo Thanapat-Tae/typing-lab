@@ -193,6 +193,34 @@
   align-content: flex-start;
 }
 
+.typing-animated-caret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  background-color: #9bb8e8;
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 1;
+  visibility: hidden;
+  transform: translate(0, 0);
+  will-change: transform;
+  animation: caret-blink 1s ease-in-out infinite;
+}
+
+.typing-animated-caret-started {
+  animation: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-animated-caret {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .typing-word {
   box-sizing: border-box;
   position: relative;
@@ -201,31 +229,6 @@
   border-radius: 4px;
   padding: 0 2px;
   overflow-wrap: anywhere;
-}
-
-.typing-word .caret-before,
-.typing-word .caret-after {
-  position: relative;
-}
-
-.typing-word .caret-before::before,
-.typing-word .caret-after::after {
-  content: "";
-  position: absolute;
-  top: 0.1em;
-  bottom: 0.1em;
-  width: 2px;
-  border-radius: 1px;
-  background-color: #9bb8e8;
-  animation: caret-blink 1s step-end infinite;
-}
-
-.typing-word .caret-before::before {
-  left: -1px;
-}
-
-.typing-word .caret-after::after {
-  right: -1px;
 }
 
 @keyframes caret-blink {
