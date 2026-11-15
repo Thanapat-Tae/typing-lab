@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { calculateTimeLimit } from "../../utils/calculateTimeLimit";
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
+import { generateWords } from "../../utils/generateWords";
 import "./TypingTest.css";
 
 const passage = "The quiet moon shines above the sleeping city.";
 
-const words = passage.split(" ");
+const normalWords = passage.split(" ");
+const initialTimerBatchSize = 50;
+const timerRefillThreshold = 10;
+const timerPresets = [15, 30, 60, 120, 150] as const;
 
 interface TestStatistics {
   wpm: number;
@@ -17,6 +20,7 @@ interface TestStatistics {
 }
 
 type TypingMode = "normal" | "timer";
+type TimerDurationOption = (typeof timerPresets)[number] | "custom";
 
 function commonPrefixLength(left: string, right: string): number {
   let length = 0;
@@ -42,21 +46,40 @@ function commonSuffixLength(left: string, right: string): number {
   return length;
 }
 
+function timerHasExpired(startedAt: number, durationSeconds: number): boolean {
+  return performance.now() - startedAt >= durationSeconds * 1000;
+}
+
 function TypingTest() {
   const [mode, setMode] = useState<TypingMode>("normal");
+  const [timerWords, setTimerWords] = useState<string[]>([]);
+  const [durationOption, setDurationOption] =
+    useState<TimerDurationOption>(30);
+  const [customDurationInput, setCustomDurationInput] = useState("30");
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentInput, setCurrentInput] = useState("");
   const [completedWords, setCompletedWords] = useState<string[]>([]);
 
-  const timeLimit = calculateTimeLimit(passage);
+  const customDuration = Number(customDurationInput);
+  const isCustomDurationValid =
+    /^\d+$/.test(customDurationInput) &&
+    Number.isInteger(customDuration) &&
+    customDuration >= 5 &&
+    customDuration <= 600;
+  const selectedDuration =
+    durationOption === "custom" ? customDuration : durationOption;
+  const isDurationValid =
+    durationOption !== "custom" || isCustomDurationValid;
+  const activeWords = mode === "normal" ? normalWords : timerWords;
 
-  const [timeLeft, setTimeLeft] = useState(timeLimit);
+  const [timeLeft, setTimeLeft] = useState(30);
   const [hasStarted, setHasStarted] = useState(false);
   const [statistics, setStatistics] = useState<TestStatistics | null>(null);
   const [resetVersion, setResetVersion] = useState(0);
 
-  const isFinished = currentWordIndex >= words.length;
-  const isTimeUp = mode === "timer" && timeLeft === 0;
+  const isFinished =
+    mode === "normal" && currentWordIndex >= normalWords.length;
+  const isTimeUp = mode === "timer" && hasStarted && timeLeft === 0;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -66,27 +89,62 @@ function TypingTest() {
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
 
-  const resetSession = useCallback(() => {
-    setCurrentWordIndex(0);
-    setCurrentInput("");
-    setCompletedWords([]);
-    setTimeLeft(timeLimit);
-    setHasStarted(false);
-    setStatistics(null);
+  const resetSession = useCallback(
+    (
+      nextMode: TypingMode = mode,
+      nextDuration = selectedDuration,
+      focusTyping = true,
+    ) => {
+      setCurrentWordIndex(0);
+      setCurrentInput("");
+      setCompletedWords([]);
+      setTimeLeft(
+        nextMode === "timer" && Number.isFinite(nextDuration)
+          ? nextDuration
+          : 0,
+      );
+      setHasStarted(false);
+      setStatistics(null);
+      setTimerWords(
+        nextMode === "timer" ? generateWords(initialTimerBatchSize) : [],
+      );
 
-    startedAtRef.current = null;
-    stoppedAtRef.current = null;
-    inputValueRef.current = "";
-    isComposingRef.current = false;
-    compositionStartValueRef.current = "";
-    accuracyCountsRef.current = { correct: 0, total: 0 };
-    setResetVersion((previous) => previous + 1);
-  }, [timeLimit]);
+      startedAtRef.current = null;
+      stoppedAtRef.current = null;
+      inputValueRef.current = "";
+      isComposingRef.current = false;
+      compositionStartValueRef.current = "";
+      accuracyCountsRef.current = { correct: 0, total: 0 };
+      if (focusTyping) {
+        setResetVersion((previous) => previous + 1);
+      }
+    },
+    [mode, selectedDuration],
+  );
 
   function handleModeChange(nextMode: TypingMode) {
     if (nextMode === mode) return;
-    resetSession();
+    resetSession(nextMode, nextMode === "timer" ? selectedDuration : 0);
     setMode(nextMode);
+  }
+
+  function handleDurationChange(nextOption: TimerDurationOption) {
+    if (nextOption === durationOption) return;
+    const nextDuration = nextOption === "custom" ? customDuration : nextOption;
+    setDurationOption(nextOption);
+    resetSession("timer", nextDuration);
+  }
+
+  function handleCustomDurationInput(value: string) {
+    setCustomDurationInput(value);
+    const nextDuration = Number(value);
+    resetSession(
+      "timer",
+      /^\d+$/.test(value) && Number.isInteger(nextDuration)
+        ? nextDuration
+        : Number.NaN,
+      false,
+    );
   }
 
   useEffect(() => {
@@ -134,6 +192,13 @@ function TypingTest() {
 
       if (!isRetryShortcut || (!isFinished && !isTimeUp)) return;
 
+      if (
+        event.target instanceof HTMLInputElement &&
+        event.target !== inputRef.current
+      ) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
       if (!event.repeat) resetSession();
@@ -148,16 +213,32 @@ function TypingTest() {
   }, [resetVersion]);
 
   useEffect(() => {
-    if (mode !== "timer" || !hasStarted || isFinished || isTimeUp) {
+    if (
+      mode !== "timer" ||
+      !hasStarted ||
+      !isDurationValid ||
+      isFinished ||
+      isTimeUp
+    ) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      setTimeLeft((previous) => Math.max(0, previous - 1));
-    }, 1000);
+    const updateCountdown = () => {
+      const startedAt = startedAtRef.current;
+      if (startedAt === null) return;
+
+      const remainingMilliseconds = Math.max(
+        0,
+        selectedDuration * 1000 - (performance.now() - startedAt),
+      );
+      setTimeLeft(Math.ceil(remainingMilliseconds / 1000));
+    };
+
+    updateCountdown();
+    const intervalId = window.setInterval(updateCountdown, 100);
 
     return () => window.clearInterval(intervalId);
-  }, [mode, hasStarted, isFinished, isTimeUp]);
+  }, [mode, hasStarted, isDurationValid, selectedDuration, isFinished, isTimeUp]);
 
   useEffect(() => {
     if (!isFinished && !isTimeUp) return;
@@ -165,11 +246,17 @@ function TypingTest() {
 
     if (startedAtRef.current === null) return;
 
-    const stoppedAt = performance.now();
+    const now = performance.now();
+    const startedAt = startedAtRef.current;
+    if (startedAt === null) return;
+    const stoppedAt =
+      mode === "timer"
+        ? Math.min(now, startedAt + selectedDuration * 1000)
+        : now;
     stoppedAtRef.current = stoppedAt;
-    const elapsedMilliseconds = Math.max(0, stoppedAt - startedAtRef.current);
+    const elapsedMilliseconds = Math.max(0, stoppedAt - startedAt);
     const correctCharacters = countCorrectCharacters(
-      words,
+      activeWords,
       completedWords,
       currentInput,
     );
@@ -181,22 +268,41 @@ function TypingTest() {
       characters: correctCharacters,
       elapsedSeconds: elapsedMilliseconds / 1000,
     });
-  }, [isFinished, isTimeUp, completedWords, currentInput]);
+  }, [
+    activeWords,
+    completedWords,
+    currentInput,
+    isFinished,
+    isTimeUp,
+    mode,
+    selectedDuration,
+  ]);
 
   function handleInput(value: string) {
-    if (isFinished || isTimeUp) return;
+    if (isFinished || isTimeUp || !isDurationValid) return;
+
+    const startedAt = startedAtRef.current;
+    if (
+      mode === "timer" &&
+      startedAt !== null &&
+      timerHasExpired(startedAt, selectedDuration)
+    ) {
+      setTimeLeft(0);
+      return;
+    }
 
     const previousInput = inputValueRef.current;
-    const expectedWord = words[currentWordIndex];
-    const isLastWord = currentWordIndex === words.length - 1;
+    const expectedWord = activeWords[currentWordIndex];
+    const isLastNormalWord =
+      mode === "normal" && currentWordIndex === normalWords.length - 1;
 
     // Finish immediately when the final word is correct.
-    if (isLastWord && value === expectedWord) {
+    if (isLastNormalWord && value === expectedWord) {
       recordCharacterAttempts(previousInput, value, expectedWord, false);
       inputValueRef.current = "";
       startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, value]);
-      setCurrentWordIndex(words.length);
+      setCurrentWordIndex(normalWords.length);
       setCurrentInput("");
       return;
     }
@@ -215,7 +321,23 @@ function TypingTest() {
       inputValueRef.current = "";
       startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, previousInput]);
-      setCurrentWordIndex((previous) => previous + 1);
+      const nextWordIndex = currentWordIndex + 1;
+      if (
+        mode === "timer" &&
+        timerWords.length - nextWordIndex <= timerRefillThreshold
+      ) {
+        setTimerWords((previous) =>
+          previous.length - nextWordIndex > timerRefillThreshold
+            ? previous
+            : [
+                ...previous,
+                ...generateWords(initialTimerBatchSize, {
+                  existingSequence: previous,
+                }),
+              ],
+        );
+      }
+      setCurrentWordIndex(nextWordIndex);
       setCurrentInput("");
       return;
     }
@@ -253,7 +375,7 @@ function TypingTest() {
           ? expectedWord[characterIndex]
           : acceptedSeparator &&
               characterIndex === expectedWord.length &&
-              currentWordIndex < words.length - 1
+              (mode === "timer" || currentWordIndex < activeWords.length - 1)
             ? " "
             : undefined;
 
@@ -311,12 +433,73 @@ function TypingTest() {
           className="typing-mode-option"
           type="button"
           aria-pressed={mode === "timer"}
-          aria-label="Timer mode, coming soon"
-          disabled
+          onClick={() => handleModeChange("timer")}
         >
           Timer
         </button>
       </div>
+
+      {mode === "timer" && (
+        <>
+          <div
+            className="typing-duration-selector"
+            role="group"
+            aria-label="Timer duration"
+          >
+            {timerPresets.map((duration) => (
+              <button
+                key={duration}
+                className="typing-duration-option"
+                type="button"
+                aria-pressed={durationOption === duration}
+                onClick={() => handleDurationChange(duration)}
+              >
+                {duration}s
+              </button>
+            ))}
+            <button
+              className="typing-duration-option"
+              type="button"
+              aria-pressed={durationOption === "custom"}
+              onClick={() => handleDurationChange("custom")}
+            >
+              Custom
+            </button>
+            {durationOption === "custom" && (
+              <label className="typing-custom-duration">
+                <span className="visually-hidden">
+                  Custom duration in seconds, from 5 to 600
+                </span>
+                <input
+                  type="number"
+                  min={5}
+                  max={600}
+                  step={1}
+                  inputMode="numeric"
+                  value={customDurationInput}
+                  aria-invalid={!isCustomDurationValid}
+                  aria-describedby={
+                    !isCustomDurationValid ? "custom-duration-error" : undefined
+                  }
+                  onChange={(event) =>
+                    handleCustomDurationInput(event.target.value)
+                  }
+                />
+                <span aria-hidden="true">s</span>
+              </label>
+            )}
+          </div>
+          {durationOption === "custom" && !isCustomDurationValid && (
+            <p
+              className="typing-duration-error"
+              id="custom-duration-error"
+              role="status"
+            >
+              Enter a whole number from 5 to 600 seconds.
+            </p>
+          )}
+        </>
+      )}
 
       {mode === "timer" && (
         <div className="timer-container">
@@ -332,7 +515,7 @@ function TypingTest() {
       )}
 
       <div className="typing-passage">
-        {words.map((word, wordIndex) => {
+        {activeWords.map((word, wordIndex) => {
           const isCurrentWord = wordIndex === currentWordIndex;
           const showCaret = isCurrentWord && !isFinished && !isTimeUp;
 
@@ -423,7 +606,7 @@ function TypingTest() {
           <button
             className="typing-retry"
             type="button"
-            onClick={resetSession}
+            onClick={() => resetSession()}
           >
             Retry
           </button>
@@ -451,7 +634,9 @@ function TypingTest() {
         onCompositionEnd={(event) =>
           handleCompositionEnd(event.currentTarget.value)
         }
-        disabled={isFinished || isTimeUp}
+        disabled={
+          isFinished || isTimeUp || (mode === "timer" && !isDurationValid)
+        }
         placeholder={isFinished ? "Test complete!" : ""}
         autoComplete="off"
         autoCapitalize="off"
