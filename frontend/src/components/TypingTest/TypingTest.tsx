@@ -2,8 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
 import { generateWords } from "../../utils/generateWords";
-import type { Passage, PassageLength } from "../../data/passages";
-import { selectRandomPassage, getPassageCountsByLength } from "../../utils/passageUtils";
+import type { PassageLength } from "../../data/passages";
 import "./TypingTest.css";
 
 const initialTimerBatchSize = 50;
@@ -31,6 +30,14 @@ const lengthLabels: Record<PassageLength, string> = {
   long: "Long",
   extra: "Extra",
   ultimate: "Ultimate",
+};
+
+const lengthWordRanges: Record<PassageLength, [number, number]> = {
+  short: [20, 50],
+  medium: [51, 120],
+  long: [121, 250],
+  extra: [251, 500],
+  ultimate: [501, 800],
 };
 
 function commonPrefixLength(left: string, right: string): number {
@@ -90,6 +97,11 @@ function getCappedElapsedMilliseconds(
   return Math.min(elapsedSeconds, durationSeconds) * 1000;
 }
 
+function randomWordCount(length: PassageLength): number {
+  const [min, max] = lengthWordRanges[length];
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 function TypingTest() {
   const [mode, setMode] = useState<TypingMode>("normal");
   const [timerWords, setTimerWords] = useState<string[]>([]);
@@ -98,13 +110,9 @@ function TypingTest() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentInput, setCurrentInput] = useState("");
   const [completedWords, setCompletedWords] = useState<string[]>([]);
-  const [normalPassage, setNormalPassage] = useState<Passage | null>(() => {
-    try {
-      return selectRandomPassage(defaultLength);
-    } catch {
-      return null;
-    }
-  });
+  const [normalWords, setNormalWords] = useState<string[]>(() =>
+    generateWords(randomWordCount(defaultLength)),
+  );
   const [selectedLength, setSelectedLength] = useState<PassageLength>(defaultLength);
 
   const customDuration = isPositiveSafeIntegerSeconds(customDurationInput);
@@ -114,7 +122,6 @@ function TypingTest() {
   const isDurationValid =
     durationOption !== "custom" || isCustomDurationValid;
 
-  const normalWords = normalPassage ? normalPassage.text.split(" ") : [];
   const activeWords = mode === "normal" ? normalWords : timerWords;
 
   const [timeLeft, setTimeLeft] = useState(30);
@@ -135,19 +142,6 @@ function TypingTest() {
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
 
-  const passageCounts = getPassageCountsByLength();
-
-  const selectPassageForLength = useCallback((length: PassageLength) => {
-    try {
-      const passage = selectRandomPassage(length);
-      setNormalPassage(passage);
-      setSelectedLength(length);
-    } catch {
-      // If no passages for this length, clear the passage
-      setNormalPassage(null);
-      setSelectedLength(length);
-    }
-  }, []);
 
   const resetSession = useCallback(
     (
@@ -171,9 +165,10 @@ function TypingTest() {
         nextMode === "timer" ? generateWords(initialTimerBatchSize) : [],
       );
 
-      // When entering Normal mode (or retrying in Normal), select a new passage
+      // When entering Normal mode (or retrying in Normal), generate a fresh word sequence
       if (nextMode === "normal") {
-        selectPassageForLength(nextLength);
+        setNormalWords(generateWords(randomWordCount(nextLength)));
+        setSelectedLength(nextLength);
       }
 
       startedAtRef.current = null;
@@ -186,12 +181,12 @@ function TypingTest() {
         setResetVersion((previous) => previous + 1);
       }
     },
-    [mode, selectedDuration, selectedLength, selectPassageForLength],
+    [mode, selectedDuration, selectedLength],
   );
 
   function handleModeChange(nextMode: TypingMode) {
     if (nextMode === mode) return;
-    // When switching to Normal, pick a passage for the current length
+    // When switching to Normal, generate words for the current length
     const nextDuration = nextMode === "timer" ? selectedDuration : 0;
     resetSession(nextMode, nextDuration);
     setMode(nextMode);
@@ -212,7 +207,7 @@ function TypingTest() {
   }
 
   function handleLengthChange(nextLength: PassageLength) {
-    if (mode !== "normal" || passageCounts[nextLength] === 0) return;
+    if (mode !== "normal") return;
     resetSession("normal", 0, true, nextLength);
   }
 
@@ -652,9 +647,7 @@ function TypingTest() {
             </div>
           </div>
         ) : (
-          <div
-            className="typing-control-row typing-normal-controls"
-          >
+          <div className="typing-control-row typing-normal-controls">
             <div
               className="typing-length-selector"
               role="group"
@@ -666,17 +659,13 @@ function TypingTest() {
                   className="typing-length-option"
                   type="button"
                   aria-pressed={selectedLength === length}
-                  disabled={passageCounts[length] === 0}
                   onClick={() => handleLengthChange(length)}
                 >
                   {lengthLabels[length]}
                 </button>
               ))}
             </div>
-            <div
-              className="timer-container typing-timer-placeholder"
-              aria-hidden="true"
-              >
+            <div className="timer-container typing-timer-placeholder" aria-hidden="true">
               <p className="typing-timer">
                 <span>&#9719;</span>
                 <span>{selectedDuration}s</span>
