@@ -141,6 +141,8 @@ function TypingTest() {
   const isComposingRef = useRef(false);
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
+  const restartCooldownRef = useRef<number | null>(null);
+  const restartAnimationRef = useRef<Animation | null>(null);
 
 
   const resetSession = useCallback(
@@ -150,6 +152,36 @@ function TypingTest() {
       focusTyping = true,
       nextLength = selectedLength,
     ) => {
+      const now = performance.now();
+      const cooldownMs = 350;
+
+      // Monotonic deadline guard - authoritative check (no timeout needed)
+      if (restartCooldownRef.current !== null && now < restartCooldownRef.current) {
+        return;
+      }
+
+      const passage = passageRef.current;
+      restartAnimationRef.current?.cancel();
+      restartAnimationRef.current = null;
+      if (
+        passage &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        const animation = passage.animate(
+          [
+            { opacity: 0, transform: "translateY(4px)" },
+            { opacity: 1, transform: "translateY(0)" },
+          ],
+          { duration: 150, easing: "ease-out" },
+        );
+        restartAnimationRef.current = animation;
+        animation.onfinish = () => {
+          if (restartAnimationRef.current === animation) {
+            restartAnimationRef.current = null;
+          }
+        };
+      }
+
       setCurrentWordIndex(0);
       if (passageRef.current) passageRef.current.scrollTop = 0;
       setCurrentInput("");
@@ -180,6 +212,9 @@ function TypingTest() {
       if (focusTyping) {
         setResetVersion((previous) => previous + 1);
       }
+
+      // Set 350ms cooldown deadline - no timeout needed, deadline is authoritative
+      restartCooldownRef.current = now + cooldownMs;
     },
     [mode, selectedDuration, selectedLength],
   );
@@ -275,6 +310,25 @@ function TypingTest() {
   useEffect(() => {
     if (resetVersion > 0) inputRef.current?.focus();
   }, [resetVersion]);
+
+  // Cancel passage animation and respect reduced-motion preference changes.
+  useEffect(() => {
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleMotionPreferenceChange = () => {
+      if (motionPreference.matches) {
+        restartAnimationRef.current?.cancel();
+        restartAnimationRef.current = null;
+      }
+    };
+
+    motionPreference.addEventListener("change", handleMotionPreferenceChange);
+
+    return () => {
+      motionPreference.removeEventListener("change", handleMotionPreferenceChange);
+      restartAnimationRef.current?.cancel();
+      restartAnimationRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (
