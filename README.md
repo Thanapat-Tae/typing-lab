@@ -10,16 +10,22 @@ Type the displayed passage at your own pace. Correct and incorrect characters ar
 
 React 19, TypeScript, Vite, and CSS.
 
+## Repository layout
+
+- `frontend/` contains the React + Vite application.
+- `backend/` is reserved for future backend work; no backend application is included yet.
+
 ## Setup
 
-Requires Node.js and npm. From the project directory, install dependencies and start the development server:
+Requires Node.js and npm. From the repository root, enter the frontend directory, install dependencies, and start the development server:
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. Run `npm run lint` and `npm run build` to check the project and create a production build.
+Open the local URL printed by Vite. From `frontend/`, run `npm run lint` to check the project or `npm run build` to create a production build.
 
 ## Usage
 

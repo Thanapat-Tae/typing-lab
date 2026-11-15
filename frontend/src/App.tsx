@@ -4,7 +4,7 @@ import "./App.css";
 function App() {
   return (
     <main>
-      <h1 className="app-title">Typing Lab</h1>
+      <h1 className="app-title">TypingLab</h1>
       <TypingTest />
     </main>
   );
