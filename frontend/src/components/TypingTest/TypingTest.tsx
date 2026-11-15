@@ -2,13 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
 import { generateWords } from "../../utils/generateWords";
-import type { PassageLength } from "../../data/passages";
 import "./TypingTest.css";
 
 const initialTimerBatchSize = 50;
 const timerRefillThreshold = 10;
 const maxExtraCharacters = 5;
 const timerPresets = [15, 30, 60, 120, 150] as const;
+const wordCountPresets = [10, 25, 50, 100, 250] as const;
+const defaultWordCount = 50;
+const maxCustomWordCount = 800;
 
 interface TestStatistics {
   wpm: number;
@@ -20,25 +22,8 @@ interface TestStatistics {
 
 type TypingMode = "normal" | "timer";
 type TimerDurationOption = (typeof timerPresets)[number] | "custom";
-
-const lengthOptions: PassageLength[] = ["short", "medium", "long", "extra", "ultimate"];
-const defaultLength: PassageLength = "medium";
-
-const lengthLabels: Record<PassageLength, string> = {
-  short: "Short",
-  medium: "Medium",
-  long: "Long",
-  extra: "Extra",
-  ultimate: "Ultimate",
-};
-
-const lengthWordRanges: Record<PassageLength, [number, number]> = {
-  short: [20, 50],
-  medium: [51, 120],
-  long: [121, 250],
-  extra: [251, 500],
-  ultimate: [501, 800],
-};
+type PresetWordCount = (typeof wordCountPresets)[number];
+type WordCountOption = PresetWordCount | "custom";
 
 function commonPrefixLength(left: string, right: string): number {
   let length = 0;
@@ -71,6 +56,17 @@ function isPositiveSafeIntegerSeconds(value: string): number | null {
   return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : null;
 }
 
+function parseWordCount(value: string): number | null {
+  if (!/^\d+$/.test(value)) return null;
+
+  const wordCount = Number(value);
+  return Number.isSafeInteger(wordCount) &&
+    wordCount >= 1 &&
+    wordCount <= maxCustomWordCount
+    ? wordCount
+    : null;
+}
+
 function timerHasExpired(
   startedAt: number,
   durationSeconds: number,
@@ -97,11 +93,6 @@ function getCappedElapsedMilliseconds(
   return Math.min(elapsedSeconds, durationSeconds) * 1000;
 }
 
-function randomWordCount(length: PassageLength): number {
-  const [min, max] = lengthWordRanges[length];
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
 function TypingTest() {
   const [mode, setMode] = useState<TypingMode>("normal");
   const [timerWords, setTimerWords] = useState<string[]>([]);
@@ -111,9 +102,15 @@ function TypingTest() {
   const [currentInput, setCurrentInput] = useState("");
   const [completedWords, setCompletedWords] = useState<string[]>([]);
   const [normalWords, setNormalWords] = useState<string[]>(() =>
-    generateWords(randomWordCount(defaultLength)),
+    generateWords(defaultWordCount),
   );
-  const [selectedLength, setSelectedLength] = useState<PassageLength>(defaultLength);
+  const [wordCountOption, setWordCountOption] = useState<WordCountOption>(
+    defaultWordCount,
+  );
+  const [selectedWordCount, setSelectedWordCount] = useState(defaultWordCount);
+  const [customWordCountInput, setCustomWordCountInput] = useState(
+    String(defaultWordCount),
+  );
 
   const customDuration = isPositiveSafeIntegerSeconds(customDurationInput);
   const isCustomDurationValid = customDuration !== null;
@@ -121,6 +118,9 @@ function TypingTest() {
     durationOption === "custom" ? customDuration ?? 0 : durationOption;
   const isDurationValid =
     durationOption !== "custom" || isCustomDurationValid;
+  const parsedCustomWordCount = parseWordCount(customWordCountInput);
+  const isWordCountValid =
+    wordCountOption !== "custom" || parsedCustomWordCount !== null;
 
   const activeWords = mode === "normal" ? normalWords : timerWords;
 
@@ -144,6 +144,7 @@ function TypingTest() {
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
   const restartCooldownRef = useRef<number | null>(null);
+  const appliedCustomWordCountRef = useRef(String(defaultWordCount));
   const restartAnimationRef = useRef<Animation | null>(null);
   const caretPositionRef = useRef<{ x: number; y: number } | null>(null);
   const caretTransitionDisabledRef = useRef(false);
@@ -153,16 +154,8 @@ function TypingTest() {
       nextMode: TypingMode = mode,
       nextDuration = selectedDuration,
       focusTyping = true,
-      nextLength = selectedLength,
+      nextWordCount = selectedWordCount,
     ) => {
-      const now = performance.now();
-      const cooldownMs = 350;
-
-      // Monotonic deadline guard - authoritative check (no timeout needed)
-      if (restartCooldownRef.current !== null && now < restartCooldownRef.current) {
-        return;
-      }
-
       const passage = passageRef.current;
       restartAnimationRef.current?.cancel();
       restartAnimationRef.current = null;
@@ -204,10 +197,10 @@ function TypingTest() {
         nextMode === "timer" ? generateWords(initialTimerBatchSize) : [],
       );
 
-      // When entering Normal mode (or retrying in Normal), generate a fresh word sequence
+      // When entering Words mode (or retrying in Words), generate the selected count.
       if (nextMode === "normal") {
-        setNormalWords(generateWords(randomWordCount(nextLength)));
-        setSelectedLength(nextLength);
+        setNormalWords(generateWords(nextWordCount));
+        setSelectedWordCount(nextWordCount);
       }
 
       startedAtRef.current = null;
@@ -220,17 +213,27 @@ function TypingTest() {
         setResetVersion((previous) => previous + 1);
       }
 
-      // Set 350ms cooldown deadline - no timeout needed, deadline is authoritative
-      restartCooldownRef.current = now + cooldownMs;
     },
-    [mode, selectedDuration, selectedLength],
+    [mode, selectedDuration, selectedWordCount],
   );
+
+  const restartSession = useCallback(() => {
+    const now = performance.now();
+    if (restartCooldownRef.current !== null && now < restartCooldownRef.current) {
+      return;
+    }
+    if (mode === "normal" && !isWordCountValid) return;
+
+    resetSession();
+    restartCooldownRef.current = now + 350;
+  }, [isWordCountValid, mode, resetSession]);
 
   function handleModeChange(nextMode: TypingMode) {
     if (nextMode === mode) return;
-    // When switching to Normal, generate words for the current length
+    if (nextMode === "normal" && !isWordCountValid) return;
+    // Switching to Words regenerates the selected word count.
     const nextDuration = nextMode === "timer" ? selectedDuration : 0;
-    resetSession(nextMode, nextDuration);
+    resetSession(nextMode, nextDuration, true, selectedWordCount);
     setMode(nextMode);
   }
 
@@ -248,9 +251,22 @@ function TypingTest() {
     resetSession("timer", nextDuration ?? Number.NaN, false);
   }
 
-  function handleLengthChange(nextLength: PassageLength) {
+  function handleWordCountChange(nextCount: PresetWordCount) {
     if (mode !== "normal") return;
-    resetSession("normal", 0, true, nextLength);
+    setWordCountOption(nextCount);
+    resetSession("normal", 0, true, nextCount);
+  }
+
+  function applyCustomWordCount(force = false, focusTyping = false) {
+    const wordCount = parseWordCount(customWordCountInput);
+    if (wordCount === null) return;
+    if (!force && appliedCustomWordCountRef.current === customWordCountInput) {
+      return;
+    }
+
+    appliedCustomWordCountRef.current = customWordCountInput;
+    setWordCountOption("custom");
+    resetSession("normal", 0, focusTyping, wordCount);
   }
 
   useEffect(() => {
@@ -307,12 +323,12 @@ function TypingTest() {
 
       event.preventDefault();
       event.stopPropagation();
-      if (!event.repeat) resetSession();
+      if (!event.repeat) restartSession();
     }
 
     window.addEventListener("keydown", handleRetryShortcut);
     return () => window.removeEventListener("keydown", handleRetryShortcut);
-  }, [isFinished, isTimeUp, resetSession]);
+  }, [isFinished, isTimeUp, restartSession]);
 
   useEffect(() => {
     if (resetVersion > 0) inputRef.current?.focus();
@@ -544,7 +560,14 @@ function TypingTest() {
   }, []);
 
   function handleInput(value: string) {
-    if (isFinished || isTimeUp || !isDurationValid) return;
+    if (
+      isFinished ||
+      isTimeUp ||
+      !isDurationValid ||
+      (mode === "normal" && !isWordCountValid)
+    ) {
+      return;
+    }
 
     const startedAt = startedAtRef.current;
     if (
@@ -705,7 +728,7 @@ function TypingTest() {
           aria-pressed={mode === "normal"}
           onClick={() => handleModeChange("normal")}
         >
-          Normal
+          Words
         </button>
         <button
           className="typing-mode-option"
@@ -765,7 +788,7 @@ function TypingTest() {
                     value={customDurationInput}
                     aria-invalid={!isCustomDurationValid}
                     aria-describedby={
-                      !isCustomDurationValid ? "custom-duration-error" : undefined
+                      !isCustomDurationValid ? "typing-control-error" : undefined
                     }
                     onChange={(event) =>
                       handleCustomDurationInput(event.target.value)
@@ -790,21 +813,72 @@ function TypingTest() {
         ) : (
           <div className="typing-control-row typing-normal-controls">
             <div
-              className="typing-length-selector"
+              className="typing-word-count-selector"
               role="group"
-              aria-label="Passage length"
+              aria-label="Word count"
             >
-              {lengthOptions.map((length) => (
+              {wordCountPresets.map((count) => (
                 <button
-                  key={length}
-                  className="typing-length-option"
+                  key={count}
+                  className="typing-word-count-option"
                   type="button"
-                  aria-pressed={selectedLength === length}
-                  onClick={() => handleLengthChange(length)}
+                  aria-label={`${count} words`}
+                  aria-pressed={wordCountOption === count}
+                  onClick={() => handleWordCountChange(count)}
                 >
-                  {lengthLabels[length]}
+                  {count}
                 </button>
               ))}
+              <button
+                className="typing-word-count-option"
+                type="button"
+                aria-pressed={wordCountOption === "custom"}
+                onClick={() => {
+                  if (wordCountOption === "custom") {
+                    applyCustomWordCount(true);
+                    return;
+                  }
+
+                  setWordCountOption("custom");
+                  const wordCount = parseWordCount(customWordCountInput);
+                  if (wordCount !== null) {
+                    appliedCustomWordCountRef.current = customWordCountInput;
+                    resetSession("normal", 0, false, wordCount);
+                  }
+                }}
+              >
+                Custom
+              </button>
+              {wordCountOption === "custom" && (
+                <label className="typing-custom-duration typing-custom-word-count">
+                  <span className="visually-hidden">
+                    Custom word count from 1 to 800
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={maxCustomWordCount}
+                    step={1}
+                    inputMode="numeric"
+                    value={customWordCountInput}
+                    aria-invalid={!isWordCountValid}
+                    aria-describedby={
+                      !isWordCountValid ? "typing-control-error" : undefined
+                    }
+                    onChange={(event) =>
+                      setCustomWordCountInput(event.target.value)
+                    }
+                    onBlur={() => applyCustomWordCount()}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        applyCustomWordCount(true, true);
+                      }
+                    }}
+                  />
+                  <span aria-hidden="true">words</span>
+                </label>
+              )}
             </div>
             <div className="timer-container typing-timer-placeholder" aria-hidden="true">
               <p className="typing-timer">
@@ -816,14 +890,20 @@ function TypingTest() {
         )}
 
         <p
-          id="custom-duration-error"
+          id="typing-control-error"
           className="typing-duration-error"
           role="status"
           aria-live="polite"
-          aria-hidden={mode === "normal"}
+          aria-hidden={
+            mode === "timer"
+              ? isDurationValid
+              : wordCountOption !== "custom" || isWordCountValid
+          }
         >
           {mode === "timer" && !isDurationValid &&
             "Enter a positive whole number of seconds."}
+          {mode === "normal" && wordCountOption === "custom" &&
+            !isWordCountValid && "Enter a whole number from 1 to 800."}
         </p>
       </div>
 
@@ -922,7 +1002,7 @@ function TypingTest() {
           className="typing-rewind"
           type="button"
           aria-label="Restart typing test"
-          onClick={() => resetSession()}
+          onClick={restartSession}
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 4v6h6" />
@@ -943,7 +1023,7 @@ function TypingTest() {
           <button
             className="typing-retry"
             type="button"
-            onClick={() => resetSession()}
+            onClick={restartSession}
           >
             Retry
           </button>
@@ -970,7 +1050,10 @@ function TypingTest() {
           handleCompositionEnd(event.currentTarget.value)
         }
         disabled={
-          isFinished || isTimeUp || (mode === "timer" && !isDurationValid)
+          isFinished ||
+          isTimeUp ||
+          (mode === "timer" && !isDurationValid) ||
+          (mode === "normal" && !isWordCountValid)
         }
         placeholder={isFinished ? "Test complete!" : ""}
         autoComplete="off"

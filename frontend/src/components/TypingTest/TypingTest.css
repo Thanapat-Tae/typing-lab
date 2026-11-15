@@ -40,7 +40,7 @@
   cursor: not-allowed;
 }
 
-.typing-length-selector {
+.typing-word-count-selector {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -48,7 +48,7 @@
   margin: 0;
 }
 
-.typing-length-option {
+.typing-word-count-option {
   padding: 0;
   border: 0;
   background: none;
@@ -60,21 +60,21 @@
   gap: 0.35rem;
 }
 
-.typing-length-option[aria-pressed="true"] {
+.typing-word-count-option[aria-pressed="true"] {
   color: #d6e3f5;
 }
 
-.typing-length-option:not(:disabled):hover {
+.typing-word-count-option:not(:disabled):hover {
   color: #b8c9e4;
 }
 
-.typing-length-option:focus-visible {
+.typing-word-count-option:focus-visible {
   border-radius: 2px;
   outline: 2px solid rgba(155, 184, 232, 0.75);
   outline-offset: 3px;
 }
 
-.typing-length-option:disabled {
+.typing-word-count-option:disabled {
   color: #8491a2;
   cursor: not-allowed;
 }
@@ -255,7 +255,7 @@
 }
 
 .active-word {
-  background-color: rgba(155, 184, 232, 0.15);
+  background-color: transparent;
 }
 
 .correct {
@@ -272,7 +272,6 @@
 
 .typing-character-missing {
   color: #f87171;
-  background: rgba(248, 113, 113, 0.12);
   text-decoration: underline wavy currentColor;
   text-underline-offset: 0.2em;
 }
@@ -283,7 +282,6 @@
 
 .incorrect {
   color: #f87171;
-  background-color: rgba(248, 113, 113, 0.12);
 }
 
 .timer-container {
