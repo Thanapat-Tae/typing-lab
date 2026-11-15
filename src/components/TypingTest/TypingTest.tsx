@@ -46,8 +46,37 @@ function commonSuffixLength(left: string, right: string): number {
   return length;
 }
 
-function timerHasExpired(startedAt: number, durationSeconds: number): boolean {
-  return performance.now() - startedAt >= durationSeconds * 1000;
+function isPositiveSafeIntegerSeconds(value: string): number | null {
+  if (!/^\d+$/.test(value)) return null;
+
+  const seconds = Number(value);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : null;
+}
+
+function timerHasExpired(
+  startedAt: number,
+  durationSeconds: number,
+  now = performance.now(),
+): boolean {
+  return (now - startedAt) / 1000 >= durationSeconds;
+}
+
+function getRemainingSeconds(
+  startedAt: number,
+  durationSeconds: number,
+  now = performance.now(),
+): number {
+  const elapsedSeconds = Math.max(0, now - startedAt) / 1000;
+  return Math.ceil(Math.max(0, durationSeconds - elapsedSeconds));
+}
+
+function getCappedElapsedMilliseconds(
+  startedAt: number,
+  durationSeconds: number,
+  now = performance.now(),
+): number {
+  const elapsedSeconds = Math.max(0, now - startedAt) / 1000;
+  return Math.min(elapsedSeconds, durationSeconds) * 1000;
 }
 
 function TypingTest() {
@@ -60,14 +89,10 @@ function TypingTest() {
   const [currentInput, setCurrentInput] = useState("");
   const [completedWords, setCompletedWords] = useState<string[]>([]);
 
-  const customDuration = Number(customDurationInput);
-  const isCustomDurationValid =
-    /^\d+$/.test(customDurationInput) &&
-    Number.isInteger(customDuration) &&
-    customDuration >= 5 &&
-    customDuration <= 600;
+  const customDuration = isPositiveSafeIntegerSeconds(customDurationInput);
+  const isCustomDurationValid = customDuration !== null;
   const selectedDuration =
-    durationOption === "custom" ? customDuration : durationOption;
+    durationOption === "custom" ? customDuration ?? 0 : durationOption;
   const isDurationValid =
     durationOption !== "custom" || isCustomDurationValid;
   const activeWords = mode === "normal" ? normalWords : timerWords;
@@ -130,21 +155,16 @@ function TypingTest() {
 
   function handleDurationChange(nextOption: TimerDurationOption) {
     if (nextOption === durationOption) return;
-    const nextDuration = nextOption === "custom" ? customDuration : nextOption;
+    const nextDuration =
+      nextOption === "custom" ? customDuration ?? Number.NaN : nextOption;
     setDurationOption(nextOption);
     resetSession("timer", nextDuration);
   }
 
   function handleCustomDurationInput(value: string) {
     setCustomDurationInput(value);
-    const nextDuration = Number(value);
-    resetSession(
-      "timer",
-      /^\d+$/.test(value) && Number.isInteger(nextDuration)
-        ? nextDuration
-        : Number.NaN,
-      false,
-    );
+    const nextDuration = isPositiveSafeIntegerSeconds(value);
+    resetSession("timer", nextDuration ?? Number.NaN, false);
   }
 
   useEffect(() => {
@@ -227,11 +247,7 @@ function TypingTest() {
       const startedAt = startedAtRef.current;
       if (startedAt === null) return;
 
-      const remainingMilliseconds = Math.max(
-        0,
-        selectedDuration * 1000 - (performance.now() - startedAt),
-      );
-      setTimeLeft(Math.ceil(remainingMilliseconds / 1000));
+      setTimeLeft(getRemainingSeconds(startedAt, selectedDuration));
     };
 
     updateCountdown();
@@ -249,12 +265,12 @@ function TypingTest() {
     const now = performance.now();
     const startedAt = startedAtRef.current;
     if (startedAt === null) return;
-    const stoppedAt =
+    const elapsedMilliseconds = Math.max(0, now - startedAt);
+    const cappedElapsedMilliseconds =
       mode === "timer"
-        ? Math.min(now, startedAt + selectedDuration * 1000)
-        : now;
-    stoppedAtRef.current = stoppedAt;
-    const elapsedMilliseconds = Math.max(0, stoppedAt - startedAt);
+        ? getCappedElapsedMilliseconds(startedAt, selectedDuration, now)
+        : elapsedMilliseconds;
+    stoppedAtRef.current = now;
     const correctCharacters = countCorrectCharacters(
       activeWords,
       completedWords,
@@ -262,11 +278,11 @@ function TypingTest() {
     );
     const { correct, total } = accuracyCountsRef.current;
     setStatistics({
-      wpm: calculateWpm(correctCharacters, elapsedMilliseconds),
+      wpm: calculateWpm(correctCharacters, cappedElapsedMilliseconds),
       accuracy: calculateAccuracy(correct, total),
       words: completedWords.length,
       characters: correctCharacters,
-      elapsedSeconds: elapsedMilliseconds / 1000,
+      elapsedSeconds: cappedElapsedMilliseconds / 1000,
     });
   }, [
     activeWords,
@@ -468,12 +484,11 @@ function TypingTest() {
             {durationOption === "custom" && (
               <label className="typing-custom-duration">
                 <span className="visually-hidden">
-                  Custom duration in seconds, from 5 to 600
+                  Custom duration in positive whole seconds
                 </span>
                 <input
                   type="number"
-                  min={5}
-                  max={600}
+                  min={1}
                   step={1}
                   inputMode="numeric"
                   value={customDurationInput}
@@ -495,7 +510,7 @@ function TypingTest() {
               id="custom-duration-error"
               role="status"
             >
-              Enter a whole number from 5 to 600 seconds.
+              Enter a positive whole number of seconds.
             </p>
           )}
         </>
@@ -505,8 +520,8 @@ function TypingTest() {
         <div className="timer-container">
           <p
             className={`typing-timer ${
-              timeLeft <= 10 ? "timer-warning" : ""
-            } ${!hasStarted ? "timer-hidden" : ""}`}
+              hasStarted && timeLeft <= 10 ? "timer-warning" : ""
+            }`}
           >
             <span aria-hidden="true">◷</span>
             <span>{timeLeft}s</span>
