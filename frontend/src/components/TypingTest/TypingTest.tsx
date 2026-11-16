@@ -18,6 +18,13 @@ import {
   type ContentAction,
   type RoundMode,
 } from "../../utils/roundContent";
+import {
+  loadPersonalRecords,
+  savePersonalRecords,
+  shouldRecordCompletedAttempt,
+  updatePersonalRecord,
+  type PersonalRecordConfiguration,
+} from "../../utils/personalRecords";
 import "./TypingTest.css";
 
 const initialTimerBatchSize = 50;
@@ -52,6 +59,10 @@ function commonPrefixLength(left: string, right: string): number {
     length += 1;
   }
   return length;
+}
+
+function readMonotonicTime(): number {
+  return performance.now();
 }
 
 function commonSuffixLength(left: string, right: string): number {
@@ -159,6 +170,8 @@ function TypingTest() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [hasStarted, setHasStarted] = useState(false);
   const [statistics, setStatistics] = useState<TestStatistics | null>(null);
+  const [isCurrentAttemptPersonalBest, setIsCurrentAttemptPersonalBest] =
+    useState(false);
   const [resetVersion, setResetVersion] = useState(0);
 
   const isFinished =
@@ -189,6 +202,10 @@ function TypingTest() {
   const isComposingRef = useRef(false);
   const compositionStartValueRef = useRef("");
   const accuracyCountsRef = useRef({ correct: 0, total: 0 });
+  const attemptIdRef = useRef(0);
+  const lastRecordedAttemptIdRef = useRef<number | null>(null);
+  const attemptRecordConfigurationRef =
+    useRef<PersonalRecordConfiguration | null>(null);
   const restartCooldownRef = useRef<number | null>(null);
   const appliedCustomWordCountRef = useRef(String(defaultWordCount));
   const restartAnimationRef = useRef<Animation | null>(null);
@@ -242,6 +259,7 @@ function TypingTest() {
       );
       setHasStarted(false);
       setStatistics(null);
+      setIsCurrentAttemptPersonalBest(false);
       const contentUpdate = getRoundContentUpdate({
         contentAction,
         mode: nextMode,
@@ -271,6 +289,8 @@ function TypingTest() {
 
       startedAtRef.current = null;
       stoppedAtRef.current = null;
+      attemptIdRef.current += 1;
+      attemptRecordConfigurationRef.current = null;
       inputValueRef.current = "";
       isComposingRef.current = false;
       compositionStartValueRef.current = "";
@@ -510,6 +530,17 @@ function TypingTest() {
     if (stoppedAtRef.current !== null) return;
 
     if (startedAtRef.current === null) return;
+    const attemptId = attemptIdRef.current;
+    if (
+      !shouldRecordCompletedAttempt(
+        isFinished || isTimeUp,
+        attemptId,
+        lastRecordedAttemptIdRef.current,
+      )
+    ) {
+      return;
+    }
+    lastRecordedAttemptIdRef.current = attemptId;
 
     const now = performance.now();
     const startedAt = startedAtRef.current;
@@ -527,14 +558,26 @@ function TypingTest() {
       mode === "passage",
     );
     const { correct, total } = accuracyCountsRef.current;
-    setStatistics({
+    const completedStatistics: TestStatistics = {
       wpm: calculateWpm(correctCharacters, cappedElapsedMilliseconds),
       accuracy: calculateAccuracy(correct, total),
       words: completedWords.length,
       characters: correctCharacters,
       elapsedSeconds: cappedElapsedMilliseconds / 1000,
       errors: calculateErrors(correct, total),
-    });
+    };
+    setStatistics(completedStatistics);
+
+    const configuration = attemptRecordConfigurationRef.current;
+    if (configuration !== null) {
+      const update = updatePersonalRecord(
+        loadPersonalRecords(),
+        configuration,
+        { ...completedStatistics, completedAt: new Date().toISOString() },
+      );
+      setIsCurrentAttemptPersonalBest(update.isNewPersonalBest);
+      if (update.changed) savePersonalRecords(update.records);
+    }
   }, [
     activeWords,
     completedWords,
@@ -857,8 +900,43 @@ function TypingTest() {
   function startTimerIfNeeded() {
     if (startedAtRef.current !== null) return;
 
-    startedAtRef.current = performance.now();
+    attemptRecordConfigurationRef.current =
+      getCurrentPersonalRecordConfiguration();
+    startedAtRef.current = readMonotonicTime();
     setHasStarted(true);
+  }
+
+  function getCurrentPersonalRecordConfiguration():
+    | PersonalRecordConfiguration
+    | null {
+    if (mode === "normal") {
+      return {
+        mode: "words",
+        wordCount: selectedWordCount,
+        strict: strictMode,
+      };
+    }
+
+    if (mode === "timer") {
+      return {
+        mode: "timer",
+        durationSeconds: selectedDuration,
+        strict: strictMode,
+      };
+    }
+
+    if (!selectedPassage) return null;
+    const passageLabel =
+      [selectedPassage.author, selectedPassage.workTitle]
+        .filter((part): part is string => Boolean(part))
+        .join(" · ") || "Original passage";
+    return {
+      mode: "passage",
+      passageId: selectedPassage.id,
+      passageLength,
+      passageLabel,
+      strict: strictMode,
+    };
   }
 
   return (
@@ -1325,6 +1403,27 @@ function TypingTest() {
       {statistics !== null && (
         <section className="typing-results" aria-labelledby="typing-results-title">
           <h2 id="typing-results-title">Round complete</h2>
+          {isCurrentAttemptPersonalBest && (
+            <p
+              className="typing-personal-best-indicator"
+              role="status"
+              aria-live="polite"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              >
+                <path d="m10 2 2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.5-4.6 2.5.9-5.2-3.8-3.7 5.2-.8L10 2Z" />
+              </svg>
+              New Personal Best
+            </p>
+          )}
           <div className="typing-results-primary">
             <div className="typing-result-metric typing-result-metric-wpm">
               <span className="typing-result-label">WPM</span>

@@ -649,3 +649,19 @@
     font-size: 1rem;
   }
 }
+
+.typing-personal-best-indicator {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: -0.45rem auto 1.2rem;
+  color: #9bb8e8;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.typing-personal-best-indicator svg {
+  color: #d6e3f5;
+}
