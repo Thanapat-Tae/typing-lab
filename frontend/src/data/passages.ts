@@ -27,118 +27,204 @@ export const LENGTH_RANGES: Record<PassageLength, [number, number]> = {
 };
 
 export const passages: Passage[] = [
-  // Short (20–50 words) - 4 passages
+  // Short-ID records (8); length assignment uses actual text word counts.
   {
     id: "orig-short-001",
-    text: "The quiet moon shines above the sleeping city while stars keep watch through the peaceful night sky overhead",
+    text: "The quiet moon shines above the sleeping city, while stars keep watch through the peaceful night sky overhead in silence.",
     category: "original",
     license: "Original",
   },
   {
     id: "orig-short-002",
-    text: "Morning light spreads across the meadow as dew evaporates from each blade of grass in the silence",
+    text: "Morning light spreads across the meadow as dew evaporates from each blade of grass in the silence of dawn.",
     category: "original",
     license: "Original",
   },
   {
     id: "lit-short-001",
-    text: "It was the best of times it was the worst of times it was the age of wisdom it was the age of foolishness",
+    text: "It was the year of Our Lord one thousand seven hundred and seventy-five.",
     category: "literature",
     author: "Charles Dickens",
     source: "A Tale of Two Cities",
     license: "Public Domain",
+    sourceUrl: "https://www.gutenberg.org/files/98/98-h/98-h.htm",
   },
   {
-    id: "quote-short-001",
-    text: "The only way to do great work is to love what you do every single day",
-    category: "quotes",
-    author: "Steve Jobs",
-    source: "Stanford Commencement Address 2005",
-    license: "Fair Use — Short Quotation",
+    id: "orig-short-003",
+    text: "A gentle river flows through the valley, carrying stories from distant mountains to the waiting sea.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-short-004",
+    text: "Children laugh as they chase fireflies through the summer dusk, their small hands reaching for glowing dreams.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-short-005",
+    text: "The old carpenter measures twice before cutting once, knowing patience builds what haste destroys.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-short-006",
+    text: "Snow falls silently on the pine forest, blanketing the world in white peace until spring returns.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-short-007",
+    text: "A lighthouse beam sweeps the dark water, guiding ships home through storms and calm alike.",
+    category: "original",
+    license: "Original",
   },
 
-  // Medium (51–120 words) - 4 passages
+  // Medium-ID records (8); length assignment uses actual text word counts.
   {
     id: "orig-medium-001",
-    text: "A gentle breeze carries the scent of pine through the forest canopy while sunlight filters through the leaves creating dappled patterns on the mossy ground below where small creatures go about their daily routines undisturbed by the passage of time or the changing seasons",
+    text: "A gentle breeze carries the scent of pine through the forest canopy, while sunlight filters through the leaves, creating dappled patterns on the mossy ground below, where small creatures go about their daily routines, undisturbed by the passage of time or the changing seasons.",
     category: "original",
     license: "Original",
   },
   {
     id: "orig-medium-002",
-    text: "The old lighthouse stands sentinel on the rocky cliff its beam sweeping across the dark water guiding ships safely home through storm and calm alike as generations of keepers have tended the light through countless nights and endless storms",
+    text: "The old lighthouse stands sentinel on the rocky cliff, its beam sweeping across the dark water, guiding ships safely home through storm and calm alike, as generations of keepers have tended the light through countless nights and endless storms.",
     category: "original",
     license: "Original",
   },
   {
     id: "lit-medium-001",
-    text: "Call me Ishmael Some years ago never mind how long precisely having little or no money in my purse and nothing particular to interest me on shore I thought I would sail about a little and see the watery part of the world",
+    text: "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
     category: "literature",
     author: "Herman Melville",
     source: "Moby-Dick",
     license: "Public Domain",
+    sourceUrl: "https://www.gutenberg.org/files/2701/2701-h/2701-h.htm",
   },
   {
-    id: "quote-medium-001",
-    text: "In the middle of difficulty lies opportunity this simple truth has guided countless innovators through the darkest moments of discovery when the path forward seemed impossible and the cost of failure appeared too great to bear",
-    category: "quotes",
-    author: "Albert Einstein",
-    source: "Attributed",
-    license: "Fair Use — Short Quotation",
+    id: "orig-medium-003",
+    text: "The garden awakens at dawn as roses unfold their petals to greet the warming sun, while bees move from flower to flower, collecting nectar for the hive, and butterflies dance on currents of air above the lavender beds.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-medium-004",
+    text: "A train crosses the prairie at sunset, its whistle echoing across miles of golden grass, while passengers watch the landscape transform from day to night and the stars emerge one by one in the darkening sky.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-medium-005",
+    text: "The library holds centuries of knowledge in its leather-bound volumes, each page a doorway to another time and place where minds long silent still speak to those who take the time to listen and learn.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-medium-006",
+    text: "Mountains rise against the horizon, their peaks catching the last light of day, while valleys fall into shadow and the wind carries the scent of pine and stone through ancient passes carved by glaciers long gone.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-medium-007",
+    text: "An old fisherman mends his nets at dawn, remembering decades of storms weathered and calm seas enjoyed, knowing each repaired knot holds the promise of another day upon the water he loves.",
+    category: "original",
+    license: "Original",
   },
 
-  // Long (121–250 words) - 3 passages
+  // Long-ID records (6); length assignment uses actual text word counts.
   {
     id: "orig-long-001",
-    text: "The ancient library holds more than books it holds the collected wisdom of civilizations that have risen and fallen each volume a window into a world that no longer exists yet whose questions still echo in our own time as we turn the fragile pages we join a conversation that spans millennia connecting minds across the unbridgeable gaps of language culture and belief",
+    text: "The ancient library holds more than books: it holds the collected wisdom of civilizations that have risen and fallen, each volume a window into a world that no longer exists, yet whose questions still echo in our own time. As we turn the fragile pages, we join a conversation that spans millennia, connecting minds across the unbridgeable gaps of language, culture, and belief.",
     category: "original",
     license: "Original",
   },
   {
     id: "orig-long-002",
-    text: "Night falls on the desert and the temperature drops sharply the stars emerge in numbers no city dweller has ever seen each one a distant sun burning steadily in the void the silence is absolute broken only by the occasional shift of sand as the wind reshapes dunes that have existed longer than any human memory",
+    text: "Night falls on the desert, and the temperature drops sharply. The stars emerge in numbers no city dweller has ever seen, each one a distant sun burning steadily in the void. The silence is absolute, broken only by the occasional shift of sand as the wind reshapes dunes that have existed longer than any human memory.",
     category: "original",
     license: "Original",
   },
   {
     id: "lit-long-001",
-    text: "It is a truth universally acknowledged that a single man in possession of a good fortune must be in want of a wife however little known the feelings or views of such a man may be on his first entering a neighbourhood this truth is so well fixed in the minds of the surrounding families that he is considered the rightful property of some one or other of their daughters",
+    text: "It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters.",
     category: "literature",
     author: "Jane Austen",
     source: "Pride and Prejudice",
     license: "Public Domain",
+    sourceUrl: "https://www.gutenberg.org/files/1342/1342-h/1342-h.htm",
+  },
+  {
+    id: "orig-long-003",
+    text: "The ocean stretches to the horizon, a vast expanse of blue and green where waves rise and fall in endless rhythm, driven by winds that have circled the globe since before humanity walked upright. Each crest carries stories of distant shores and storms survived.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-long-004",
+    text: "A cathedral stands at the heart of the ancient city, its spires reaching toward heaven, built by hands that turned dust into art, stone into prayer. Generations of worshippers have knelt beneath its vaulted arches, seeking comfort in the permanence of beauty that outlasts empires.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-long-005",
+    text: "The northern lights dance across the arctic sky: curtains of green and purple and red, moving to music no ear can hear, a celestial ballet performed for the polar bears and the silent ice and the few humans brave enough to witness the sky burning with color.",
+    category: "original",
+    license: "Original",
   },
 
-  // Extra (251–500 words) - 2 passages
+  // Extra-ID records (4); length assignment uses actual text word counts.
   {
     id: "orig-extra-001",
-    text: "The river has flowed this way since before the mountains rose to their current heights carving its patient path through stone and soil indifferent to the empires that have risen and fallen along its banks the water remembers nothing yet carries everything minerals from distant peaks leaves from last autumn seeds that will take root miles downstream each drop a tiny messenger in an endless cycle that connects the heights to the depths the past to the future",
+    text: "The river has flowed this way since before the mountains rose to their current heights, carving its patient path through stone and soil, indifferent to the empires that have risen and fallen along its banks. The water remembers nothing, yet carries everything: minerals from distant peaks, leaves from last autumn, seeds that will take root miles downstream. Each drop is a tiny messenger in an endless cycle that connects the heights to the depths, the past to the future.",
     category: "original",
     license: "Original",
   },
   {
     id: "lit-extra-001",
-    text: "There was no possibility of taking a walk that day we had been wandering indeed in the leafless shrubbery an hour in the morning but since dinner the cold winter wind had brought with it clouds so sombre and a rain so penetrating that further out of door exercise was now out of the question I was glad of it I never liked long walks especially on chilly afternoons dreadful to me was the coming home in the raw twilight with nipped fingers and toes and a heart saddened by the chidings of Bessie the nurse and humbled by the consciousness of my physical inferiority to Eliza John and Georgiana Reed",
+    text: "There was no possibility of taking a walk that day. We had been wandering, indeed, in the leafless shrubbery an hour in the morning; but since dinner (Mrs. Reed, when there was no company, dined early) the cold winter wind had brought with it clouds so sombre, and a rain so penetrating, that further outdoor exercise was now out of the question. I was glad of it: I never liked long walks, especially on chilly afternoons: dreadful to me was the coming home in the raw twilight, with nipped fingers and toes, and a heart saddened by the chidings of Bessie, the nurse, and humbled by the consciousness of my physical inferiority to Eliza, John, and Georgiana Reed.",
     category: "literature",
     author: "Charlotte Brontë",
-    source: "Jane Eyre",
+    workTitle: "Jane Eyre",
     license: "Public Domain",
+    publicationYear: 1847,
+    sourceUrl: "https://www.gutenberg.org/files/1260/1260-h/1260-h.htm",
   },
-
-  // Ultimate (501+ words) - 2 passages
   {
-    id: "orig-ultimate-001",
-    text: "The manuscript lay on the desk where it had been left centuries ago its vellum pages yellowed but intact the ink still legible though faded to a sepia hue that spoke of oak galls and iron sulfate mixed by hands long turned to dust the text was a treatise on the nature of time written by a scholar whose name had been lost to the very erosion he described how moments slip away like sand through fingers how the present becomes past before consciousness can grasp it how the future arrives already burdened by the weight of expectation the scholar had argued that true understanding comes not from measuring time but from inhabiting it fully in each fleeting instant the marginal notes in a later hand suggested the author had disappeared into the wilderness seeking to test his theory that one could step outside the river of time by surrendering completely to the present moment whether he succeeded or merely became another victim of the elements remains unknown the library that housed this work burned in a war fought over borders that no longer exist yet the manuscript survived rescued by a monk who recognized its value though he could not read its language he carried it across mountains and seas through famine and plague to this desk where it waits for a reader willing to slow down enough to meet the author in the eternal now",
+    id: "orig-extra-002",
+    text: "The manuscript lay on the desk where it had been left centuries ago, its vellum pages yellowed but intact, the ink still legible though faded to a sepia hue that spoke of oak galls and iron sulfate mixed by hands long turned to dust. The text was a treatise on the nature of time, written by a scholar whose name had been lost to the very erosion he described: how moments slip away like sand through fingers, how the present becomes past before consciousness can grasp it, how the future arrives already burdened by the weight of expectation. The scholar had argued that true understanding comes not from measuring time, but from inhabiting it fully in each fleeting instant. The marginal notes in a later hand suggested the author had disappeared into the wilderness, seeking to test his theory that one could step outside the river of time by surrendering completely to the present moment. Whether he succeeded or merely became another victim of the elements remains unknown. The library that housed this work burned in a war fought over borders that no longer exist, yet the manuscript survived, rescued by a monk who recognized its value, though he could not read its language. He carried it across mountains and seas, through famine and plague, to this desk, where it waits for a reader willing to slow down enough to meet the author in the eternal now.",
     category: "original",
     license: "Original",
   },
   {
-    id: "orig-ultimate-002",
+    id: "orig-extra-003",
     text: "In the beginning there was only the void and the void was without form and empty and darkness covered the face of the deep until a single thought stirred in the silence and that thought became a word and the word became light and the light separated from the darkness and there was evening and there was morning the first day and the light spread across the vastness creating form from chaos and substance from nothing and the stars were born and the worlds took shape and life stirred in the waters and crawled onto the land and walked upright beneath the sun and built cities and wrote stories and looked up at the night sky and wondered about the meaning of it all and the void that was once empty is now full of voices asking the same question that first thought asked so long ago what is the purpose of existence and the answer echoes through the ages in every heart that beats and every mind that thinks and every soul that reaches for the stars",
     category: "original",
     license: "Original",
   },
 
+  // Ultimate-ID records (3); length assignment uses actual text word counts.
+  {
+    id: "orig-ultimate-001",
+    text: "The ancient forest has stood for ten thousand years, its roots drinking from the same aquifer that fed the dinosaurs, its canopy filtering sunlight that has traveled ninety three million miles to reach these leaves. Each tree is a universe unto itself, hosting mosses and fungi and insects and birds and mammals in a web of life so intricate that no single mind can grasp its full complexity. Yet the forest persists through fire and flood and disease and the axes of men who see only timber where the forest sees community.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-ultimate-002",
+    text: "A child opens a book for the first time and discovers that the marks on the page are not random scratches but doors: each word a threshold, each sentence a path, each chapter a new world waiting to be explored. The story unfolds, and the child learns that dragons can be outwitted, that kindness is stronger than cruelty, that the smallest person can change the course of history. When the final page turns, the child closes the book, but the doors remain open in the mind forever.",
+    category: "original",
+    license: "Original",
+  },
+  {
+    id: "orig-ultimate-003",
+    text: "The old observatory sits atop the mountain, where the air is thin and the stars burn with a clarity unknown in the valleys below. Generations of astronomers have climbed these slopes, carrying instruments and notebooks and questions about the nature of the universe. They have measured the parallax of nearby stars, the redshift of distant galaxies, and the temperature of the cosmic microwave background, each observation a small step toward understanding the vastness that surrounds us. And yet, the more they learn, the more questions arise, and the mountain remains silent beneath the wheeling heavens.",
+    category: "original",
+    license: "Original",
+  },
+
+  // Researched literature candidates; length groups derive from actual text counts.
   {
     id: "carroll-alice-rabbit-hole-short",
     text: "In another moment down went Alice after it, never once considering how in the world she was to get out again.",
@@ -276,7 +362,7 @@ export const passages: Passage[] = [
   },
   {
     id: "grahame-wind-in-the-willows-mole-extra",
-    text: "First with brooms, then with dusters; then on ladders and steps and chairs, with a brush and a pail of whitewash; till he had dust in his throat and eyes, and splashes of white-wash all over his black fur, and an aching back and weary arms. Spring was moving in the air above and in the earth below and around him, penetrating even his dark and lowly little house with its spirit of divine discontent and longing. It was small wonder, then, that he suddenly flung down his brush on the floor, said 'Bother!' and 'O blow!' and also 'Hang spring-cleaning?' and bolted out of the house without even waiting to put on his coat. Something up above was calling him imperiously, and he made for the steep little tunnel which answered in his case to the gravelled carriage-drive owned by animals whose residences are nearer to the sun and air.",
+    text: "The Mole had been working very hard all the morning, spring-cleaning his little home. First with brooms, then with dusters; then on ladders and steps and chairs, with a brush and a pail of whitewash; till he had dust in his throat and eyes, and splashes of white-wash all over his black fur, and an aching back and weary arms. Spring was moving in the air above and in the earth below and around him, penetrating even his dark and lowly little house with its spirit of divine discontent and longing. It was small wonder, then, that he suddenly flung down his brush on the floor, said 'Bother!' and 'O blow!' and also 'Hang spring-cleaning?' and bolted out of the house without even waiting to put on his coat. Something up above was calling him imperiously, and he made for the steep little tunnel which answered in his case to the gravelled carriage-drive owned by animals whose residences are nearer to the sun and air.",
     category: "literature",
     author: "Kenneth Grahame",
     workTitle: "The Wind in the Willows",
@@ -312,13 +398,35 @@ export const passages: Passage[] = [
   },
   {
     id: "austen-pride-jane-elizabeth-ultimate",
-    text: "“To oblige you, I would try to believe almost anything, but no one else could be benefited by such a belief as this; for were I persuaded that Charlotte had any regard for him, I should only think worse of her understanding than I now do of her heart. My dear Jane, Mr. Collins is a conceited, pompous, narrow-minded, silly man: you know he is, as well as I do; and you must feel, as well as I do, that the woman who marries him cannot have a proper way of thinking. You shall not defend her, though it is Charlotte Lucas. You shall not, for the sake of one individual, change the meaning of principle and integrity, nor endeavour to persuade yourself or me, that selfishness is prudence, and insensibility of danger security for happiness.” “I must think your language too strong in speaking of both,” replied Jane; “and I hope you will be convinced of it, by seeing them happy together. But enough of this. You alluded to something else. You mentioned two instances. I cannot misunderstand you, but I entreat you, dear Lizzy, not to pain me by thinking that person to blame, and saying your opinion of him is sunk. We must not be so ready to fancy ourselves intentionally injured.",
+    text: "“To oblige you, I would try to believe almost anything, but no one else could be benefited by such a belief as this; for were I persuaded that Charlotte had any regard for him, I should only think worse of her understanding than I now do of her heart. My dear Jane, Mr. Collins is a conceited, pompous, narrow-minded, silly man: you know he is, as well as I do; and you must feel, as well as I do, that the woman who marries him cannot have a proper way of thinking. You shall not defend her, though it is Charlotte Lucas. You shall not, for the sake of one individual, change the meaning of principle and integrity, nor endeavour to persuade yourself or me, that selfishness is prudence, and insensibility of danger security for happiness.” “I must think your language too strong in speaking of both,” replied Jane; “and I hope you will be convinced of it, by seeing them happy together. But enough of this. You alluded to something else. You mentioned two instances. I cannot misunderstand you, but I entreat you, dear Lizzy, not to pain me by thinking that person to blame, and saying your opinion of him is sunk. We must not be so ready to fancy ourselves intentionally injured. We must not expect a lively young man to be always so guarded and circumspect. It is very often nothing but our own vanity that deceives us. Women fancy admiration means more than it does.”",
     category: "literature",
     author: "Jane Austen",
     workTitle: "Pride and Prejudice",
     publicationYear: 1813,
     sourceUrl: "https://www.gutenberg.org/files/1342/1342-h/1342-h.htm",
   },
+
+  // Passages flagged for copyright approval — NOT INCLUDED IN ACTIVE LIBRARY
+  // These are kept here for reference but excluded from the active passages array
+  // TODO: Obtain legal clearance or replace with original content
+  /*
+  {
+    id: "quote-short-001",
+    text: "The only way to do great work is to love what you do every single day",
+    category: "quotes",
+    author: "Steve Jobs",
+    source: "Stanford Commencement Address 2005",
+    license: "Fair Use — Short Quotation — REQUIRES APPROVAL",
+  },
+  {
+    id: "quote-medium-001",
+    text: "In the middle of difficulty lies opportunity this simple truth has guided countless innovators through the darkest moments of discovery when the path forward seemed impossible and the cost of failure appeared too great to bear",
+    category: "quotes",
+    author: "Albert Einstein",
+    source: "Attributed",
+    license: "Fair Use — Short Quotation — REQUIRES APPROVAL",
+  },
+  */
 ];
 
 /**
