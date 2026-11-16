@@ -307,7 +307,9 @@ function TypingTest() {
   useEffect(() => {
     function handleRetryShortcut(event: KeyboardEvent) {
       const isRetryShortcut =
-        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
         !event.altKey &&
         event.key === "Enter" &&
         !event.isComposing;
@@ -870,7 +872,13 @@ function TypingTest() {
                     }
                     onBlur={() => applyCustomWordCount()}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") {
+                      if (
+                        event.key === "Enter" &&
+                        !event.shiftKey &&
+                        !event.ctrlKey &&
+                        !event.metaKey &&
+                        !event.altKey
+                      ) {
                         event.preventDefault();
                         applyCustomWordCount(true, true);
                       }
@@ -1009,7 +1017,7 @@ function TypingTest() {
             <path d="M4.5 14a8 8 0 1 0 2-7L3 10" />
           </svg>
         </button>
-        <span className="typing-retry-shortcut">Restart · Ctrl + Enter</span>
+        <span className="typing-retry-shortcut">Restart · Shift + Enter</span>
       </div>
       {statistics !== null && (
         <div className="typing-session-summary">

@@ -31,4 +31,4 @@ Open the local URL printed by Vite. From `frontend/`, run `npm run lint` to chec
 
 - Type the active word; Backspace edits your current input.
 - Press Space after an exactly correct word to continue. The final correct word completes the test.
-- After completion or timeout, choose **Retry** or press **Ctrl + Enter** to begin again. On macOS, **Cmd + Enter** also works.
+- After completion or timeout, choose **Retry** or press **Shift + Enter** to begin again.
