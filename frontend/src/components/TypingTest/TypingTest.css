@@ -4,11 +4,19 @@
   margin: 0 auto;
 }
 
-.typing-mode-selector {
+.typing-mode-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   margin: 0 0 1.5rem;
+  gap: 1.25rem;
+}
+
+.typing-mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
   gap: 1.25rem;
 }
 
@@ -37,6 +45,76 @@
 
 .typing-mode-option:disabled {
   color: #8491a2;
+  cursor: not-allowed;
+}
+
+.typing-strict-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8491a2;
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: color 150ms ease, text-shadow 150ms ease;
+}
+
+.typing-strict-tooltip {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  width: max-content;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(155, 184, 232, 0.2);
+  border-radius: 4px;
+  background: #151e2d;
+  color: #d6e3f5;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease, visibility 120ms ease;
+}
+
+.typing-strict-toggle:hover .typing-strict-tooltip,
+.typing-strict-toggle:focus-visible .typing-strict-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.typing-strict-toggle[aria-pressed="true"] {
+  color: #facc15;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.24);
+}
+
+.typing-strict-toggle[aria-pressed="true"] svg {
+  filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.45));
+}
+
+.typing-strict-toggle:not(:disabled):hover {
+  color: #d6e3f5;
+}
+
+.typing-strict-toggle[aria-pressed="true"]:hover {
+  color: #fde047;
+}
+
+.typing-strict-toggle:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid rgba(155, 184, 232, 0.75);
+  outline-offset: 4px;
+}
+
+.typing-strict-toggle[aria-disabled="true"] {
   cursor: not-allowed;
 }
 
@@ -219,6 +297,14 @@
     animation: none;
     opacity: 1;
   }
+
+  .typing-strict-toggle {
+    transition: none;
+  }
+
+  .typing-strict-tooltip {
+    transition: none;
+  }
 }
 
 .typing-word {
@@ -393,6 +479,11 @@
 }
 
 @media (max-width: 560px) {
+  .typing-strict-tooltip {
+    max-width: min(16rem, calc(100vw - 2rem));
+    white-space: normal;
+  }
+
   .typing-control-row {
     align-items: start;
     min-height: calc(3lh + 1rem);

@@ -95,11 +95,13 @@ function getCappedElapsedMilliseconds(
 
 function TypingTest() {
   const [mode, setMode] = useState<TypingMode>("normal");
+  const [strictMode, setStrictMode] = useState(false);
   const [timerWords, setTimerWords] = useState<string[]>([]);
   const [durationOption, setDurationOption] = useState<TimerDurationOption>(30);
   const [customDurationInput, setCustomDurationInput] = useState("30");
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentInput, setCurrentInput] = useState("");
+  const [strictSpaceBlocked, setStrictSpaceBlocked] = useState(false);
   const [completedWords, setCompletedWords] = useState<string[]>([]);
   const [normalWords, setNormalWords] = useState<string[]>(() =>
     generateWords(defaultWordCount),
@@ -132,6 +134,17 @@ function TypingTest() {
   const isFinished =
     mode === "normal" && currentWordIndex >= normalWords.length;
   const isTimeUp = mode === "timer" && hasStarted && timeLeft === 0;
+  const isStrictToggleLocked = hasStarted && !isFinished && !isTimeUp;
+  const hasDurationError = mode === "timer" && !isDurationValid;
+  const hasWordCountError =
+    mode === "normal" && wordCountOption === "custom" && !isWordCountValid;
+  const showStrictSpaceFeedback =
+    strictMode && strictSpaceBlocked && !isFinished && !isTimeUp;
+  const controlMessage = hasDurationError
+    ? "Enter a positive whole number of seconds."
+    : hasWordCountError
+      ? "Enter a whole number from 1 to 800."
+      : "";
 
   const inputRef = useRef<HTMLInputElement>(null);
   const passageRef = useRef<HTMLDivElement>(null);
@@ -179,6 +192,7 @@ function TypingTest() {
       }
 
       setCurrentWordIndex(0);
+      setStrictSpaceBlocked(false);
       if (passageRef.current) passageRef.current.scrollTop = 0;
       // Disable caret transition for instant reposition on restart/mode change
       caretTransitionDisabledRef.current = true;
@@ -255,6 +269,13 @@ function TypingTest() {
     if (mode !== "normal") return;
     setWordCountOption(nextCount);
     resetSession("normal", 0, true, nextCount);
+  }
+
+  function handleStrictModeToggle() {
+    if (isStrictToggleLocked) return false;
+    setStrictMode((previous) => !previous);
+    setStrictSpaceBlocked(false);
+    return true;
   }
 
   function applyCustomWordCount(force = false, focusTyping = false) {
@@ -588,6 +609,7 @@ function TypingTest() {
 
     // Finish immediately when the final word is correct.
     if (isLastNormalWord && value === expectedWord) {
+      setStrictSpaceBlocked(false);
       recordCharacterAttempts(previousInput, value, expectedWord, false);
       inputValueRef.current = "";
       startTimerIfNeeded();
@@ -605,8 +627,15 @@ function TypingTest() {
         return;
       }
 
+      if (strictMode && previousInput !== expectedWord) {
+        setCurrentInput(previousInput);
+        if (!strictSpaceBlocked) setStrictSpaceBlocked(true);
+        return;
+      }
+
       const hasExpectedSeparator =
         mode === "timer" || currentWordIndex < activeWords.length - 1;
+      setStrictSpaceBlocked(false);
       recordCharacterAttempts(
         previousInput,
         hasExpectedSeparator ? value : previousInput,
@@ -646,6 +675,7 @@ function TypingTest() {
     }
 
     if (value !== previousInput) {
+      setStrictSpaceBlocked(false);
       recordCharacterAttempts(previousInput, value, expectedWord, false);
       inputValueRef.current = value;
       startTimerIfNeeded();
@@ -723,22 +753,67 @@ function TypingTest() {
         inputRef.current?.focus();
       }}
     >
-      <div className="typing-mode-selector" role="group" aria-label="Typing mode">
+      <div className="typing-mode-bar">
+        <div className="typing-mode-selector" role="group" aria-label="Typing mode">
+          <button
+            className="typing-mode-option"
+            type="button"
+            aria-pressed={mode === "normal"}
+            onClick={() => handleModeChange("normal")}
+          >
+            Words
+          </button>
+          <button
+            className="typing-mode-option"
+            type="button"
+            aria-pressed={mode === "timer"}
+            onClick={() => handleModeChange("timer")}
+          >
+            Timer
+          </button>
+        </div>
         <button
-          className="typing-mode-option"
+          className="typing-strict-toggle"
           type="button"
-          aria-pressed={mode === "normal"}
-          onClick={() => handleModeChange("normal")}
+          aria-label={
+            isStrictToggleLocked
+              ? "Strict mode, locked during test"
+              : "Strict mode"
+          }
+          aria-pressed={strictMode}
+          aria-disabled={isStrictToggleLocked}
+          aria-describedby="typing-strict-tooltip"
+          onClick={(event) => {
+            if (
+              handleStrictModeToggle() &&
+              event.detail > 0
+            ) {
+              inputRef.current?.focus();
+            }
+          }}
         >
-          Words
-        </button>
-        <button
-          className="typing-mode-option"
-          type="button"
-          aria-pressed={mode === "timer"}
-          onClick={() => handleModeChange("timer")}
-        >
-          Timer
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          <span>Strict</span>
+          <span
+            className="typing-strict-tooltip"
+            id="typing-strict-tooltip"
+            role="tooltip"
+          >
+            Type each word correctly to continue.
+          </span>
         </button>
       </div>
 
@@ -902,16 +977,13 @@ function TypingTest() {
           className="typing-duration-error"
           role="status"
           aria-live="polite"
-          aria-hidden={
-            mode === "timer"
-              ? isDurationValid
-              : wordCountOption !== "custom" || isWordCountValid
-          }
+          aria-atomic="true"
+          aria-hidden={!controlMessage}
         >
-          {mode === "timer" && !isDurationValid &&
-            "Enter a positive whole number of seconds."}
-          {mode === "normal" && wordCountOption === "custom" &&
-            !isWordCountValid && "Enter a whole number from 1 to 800."}
+          {controlMessage}
+        </p>
+        <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+          {showStrictSpaceFeedback ? "Correct this word to continue." : ""}
         </p>
       </div>
 
@@ -1048,6 +1120,7 @@ function TypingTest() {
             (event.nativeEvent as InputEvent).isComposing
           ) {
             // IME updates are provisional; compositionend scores the commit once.
+            setStrictSpaceBlocked(false);
             setCurrentInput(event.target.value);
             return;
           }
