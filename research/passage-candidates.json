@@ -1,0 +1,378 @@
+{
+  "dataset": {
+    "title": "Typing Lab Passage Candidates v1",
+    "curatedOn": "2026-11-16",
+    "wordCountMethod": "Whitespace-separated tokens: trim text, then split on one or more whitespace characters.",
+    "punctuationPolicy": "Source punctuation, capitalization, and wording are preserved. HTML paragraph boundaries and line wrapping are joined with single spaces where an excerpt spans them; no punctuation normalization was applied.",
+    "rightsReview": "Eligibility is assessed for the underlying literary work under ordinary term rules in the United States and Thailand. This is not a legal opinion and does not clear third-party editorial matter, illustrations, or a particular digital transcription. See the research report.",
+    "categoryRanges": {
+      "Short": { "minimumWords": 12, "maximumWords": 24 },
+      "Medium": { "minimumWords": 25, "maximumWords": 48 },
+      "Long": { "minimumWords": 49, "maximumWords": 96 },
+      "Extra": { "minimumWords": 97, "maximumWords": 192 },
+      "Ultimate": { "minimumWords": 193, "maximumWords": 384 }
+    }
+  },
+  "passages": [
+    {
+      "id": "carroll-alice-rabbit-hole-short",
+      "category": "Short",
+      "text": "In another moment down went Alice after it, never once considering how in the world she was to get out again.",
+      "wordCount": 21,
+      "author": "Lewis Carroll",
+      "workTitle": "Alice’s Adventures in Wonderland",
+      "publicationYear": 1865,
+      "sourceUrl": "https://www.gutenberg.org/files/11/11-h/11-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/11",
+      "sourceEdition": "Project Gutenberg HTML transcription, Millennium Fulcrum Edition 3.0.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1865.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Lewis Carroll died in 1898.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Chapter I, paragraph beginning ‘In another moment’; source HTML rendered line 30. Text and punctuation match the source."
+    },
+    {
+      "id": "austen-pride-netherfield-short",
+      "category": "Short",
+      "text": "“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”",
+      "wordCount": 21,
+      "author": "Jane Austen",
+      "workTitle": "Pride and Prejudice",
+      "publicationYear": 1813,
+      "sourceUrl": "https://www.gutenberg.org/files/1342/1342-h/1342-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/1342",
+      "sourceEdition": "Project Gutenberg HTML transcription of the novel.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1813.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Jane Austen died in 1817.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Chapter I, Mrs. Bennet’s first question to Mr. Bennet; source HTML rendered line 217. The edition’s footnote marker is not part of the sentence and is omitted."
+    },
+    {
+      "id": "doyle-scandal-irene-short",
+      "category": "Short",
+      "text": "In his eyes she eclipses and predominates the whole of her sex.",
+      "wordCount": 12,
+      "author": "Arthur Conan Doyle",
+      "workTitle": "The Adventures of Sherlock Holmes — ‘A Scandal in Bohemia’",
+      "publicationYear": 1892,
+      "sourceUrl": "https://www.gutenberg.org/files/1661/1661-h/1661-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/1661",
+      "sourceEdition": "Project Gutenberg HTML transcription of the 1892 story collection.",
+      "rights": {
+        "unitedStates": "Underlying collection is public domain; first published in 1892.",
+        "thailand": "Underlying story is public domain under the ordinary life-plus-50-year term; Arthur Conan Doyle died in 1930.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "‘A Scandal in Bohemia’, opening paragraph; source HTML rendered line 42. This sentence is copied without the preceding initial sentence."
+    },
+    {
+      "id": "stevenson-treasure-cove-short",
+      "category": "Short",
+      "text": "“This is a handy cove,” says he at length; “and a pleasant sittyated grog-shop. Much company, mate?”",
+      "wordCount": 17,
+      "author": "Robert Louis Stevenson",
+      "workTitle": "Treasure Island",
+      "publicationYear": 1883,
+      "sourceUrl": "https://www.gutenberg.org/files/120/120-h/120-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/120",
+      "sourceEdition": "Project Gutenberg HTML transcription.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1883.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Robert Louis Stevenson died in 1894.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Part One, Chapter I, the captain speaking to the narrator’s father; source HTML rendered line 100. The source spelling ‘sittyated’ is preserved."
+    },
+    {
+      "id": "carroll-alice-rabbit-hole-medium",
+      "category": "Medium",
+      "text": "The rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down a very deep well.",
+      "wordCount": 39,
+      "author": "Lewis Carroll",
+      "workTitle": "Alice’s Adventures in Wonderland",
+      "publicationYear": 1865,
+      "sourceUrl": "https://www.gutenberg.org/files/11/11-h/11-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/11",
+      "sourceEdition": "Project Gutenberg HTML transcription, Millennium Fulcrum Edition 3.0.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1865.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Lewis Carroll died in 1898.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Chapter I, paragraph beginning ‘The rabbit-hole went straight on’; source HTML rendered line 32. Text and punctuation match the source."
+    },
+    {
+      "id": "dickens-christmas-marley-medium",
+      "category": "Medium",
+      "text": "The mention of Marley’s funeral brings me back to the point I started from. There is no doubt that Marley was dead. This must be distinctly understood, or nothing wonderful can come of the story I am going to relate.",
+      "wordCount": 40,
+      "author": "Charles Dickens",
+      "workTitle": "A Christmas Carol",
+      "publicationYear": 1843,
+      "sourceUrl": "https://www.gutenberg.org/files/46/46-h/46-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/46",
+      "sourceEdition": "Project Gutenberg HTML transcription; ebook identifies the 1843 first-edition cover and illustrations.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1843.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Charles Dickens died in 1870.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Stave One, paragraph beginning ‘The mention of Marley’s funeral’; source HTML rendered line 96. Text and punctuation match the source."
+    },
+    {
+      "id": "shelley-frankenstein-pole-medium",
+      "category": "Medium",
+      "text": "I try in vain to be persuaded that the pole is the seat of frost and desolation; it ever presents itself to my imagination as the region of beauty and delight.",
+      "wordCount": 31,
+      "author": "Mary Wollstonecraft Shelley",
+      "workTitle": "Frankenstein; or, the Modern Prometheus",
+      "publicationYear": 1818,
+      "sourceUrl": "https://www.gutenberg.org/files/84/84-h/84-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/84",
+      "sourceEdition": "Project Gutenberg HTML text reflects the 1831 revised edition; publicationYear records the work’s original 1818 publication.",
+      "rights": {
+        "unitedStates": "Underlying work and the 1831 edition are public domain; the work was first published in 1818.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Mary Shelley died in 1851.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Letter I, paragraph beginning ‘I try in vain’; source HTML rendered line 47. Text and punctuation match the source transcription."
+    },
+    {
+      "id": "austen-sense-and-sensibility-estate-medium",
+      "category": "Medium",
+      "text": "The late owner of this estate was a single man, who lived to a very advanced age, and who for many years of his life, had a constant companion and housekeeper in his sister.",
+      "wordCount": 34,
+      "author": "Jane Austen",
+      "workTitle": "Sense and Sensibility",
+      "publicationYear": 1811,
+      "sourceUrl": "https://github.com/standardebooks/jane-austen_sense-and-sensibility/blob/master/src/epub/text/chapter-1.xhtml",
+      "sourceLandingPage": "https://standardebooks.org/ebooks/jane-austen/sense-and-sensibility",
+      "sourceEdition": "Standard Ebooks source XHTML for Chapter I; Standard Ebooks states the ebook is based on a Project Gutenberg transcription and scans.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1811. Standard Ebooks dedicates its own contributions to the public domain via CC0.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Jane Austen died in 1817.",
+        "licenseNote": "Standard Ebooks' own contributions are dedicated via CC0; the underlying work is separately public domain."
+      },
+      "sourceEvidence": "Chapter I, first paragraph, sentence beginning ‘The late owner’; Standard Ebooks source XHTML lines 267–268. The sentence wording and punctuation match the source."
+    },
+    {
+      "id": "carroll-alice-well-long",
+      "category": "Long",
+      "text": "Either the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs.",
+      "wordCount": 86,
+      "author": "Lewis Carroll",
+      "workTitle": "Alice’s Adventures in Wonderland",
+      "publicationYear": 1865,
+      "sourceUrl": "https://www.gutenberg.org/files/11/11-h/11-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/11",
+      "sourceEdition": "Project Gutenberg HTML transcription, Millennium Fulcrum Edition 3.0.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1865.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Lewis Carroll died in 1898.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Chapter I, paragraph beginning ‘Either the well was very deep’; source HTML rendered line 33. Text and punctuation match the source."
+    },
+    {
+      "id": "dickens-christmas-scrooge-description-long",
+      "category": "Long",
+      "text": "Oh! But he was a tight-fisted hand at the grindstone, Scrooge! a squeezing, wrenching, grasping, scraping, clutching, covetous, old sinner! Hard and sharp as flint, from which no steel had ever struck out generous fire; secret, and self-contained, and solitary as an oyster. The cold within him froze his old features, nipped his pointed nose, shrivelled his cheek, stiffened his gait; made his eyes red, his thin lips blue; and spoke out shrewdly in his grating voice.",
+      "wordCount": 77,
+      "author": "Charles Dickens",
+      "workTitle": "A Christmas Carol",
+      "publicationYear": 1843,
+      "sourceUrl": "https://www.gutenberg.org/files/46/46-h/46-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/46",
+      "sourceEdition": "Project Gutenberg HTML transcription; ebook identifies the 1843 first-edition cover and illustrations.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1843.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Charles Dickens died in 1870.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Stave One, Scrooge’s description; source HTML rendered lines 99–100. Text and punctuation match the source."
+    },
+    {
+      "id": "shelley-frankenstein-northern-breeze-long",
+      "category": "Long",
+      "text": "I am already far north of London, and as I walk in the streets of Petersburgh, I feel a cold northern breeze play upon my cheeks, which braces my nerves and fills me with delight. Do you understand this feeling? This breeze, which has travelled from the regions towards which I am advancing, gives me a foretaste of those icy climes. Inspirited by this wind of promise, my daydreams become more fervent and vivid.",
+      "wordCount": 74,
+      "author": "Mary Wollstonecraft Shelley",
+      "workTitle": "Frankenstein; or, the Modern Prometheus",
+      "publicationYear": 1818,
+      "sourceUrl": "https://www.gutenberg.org/files/84/84-h/84-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/84",
+      "sourceEdition": "Project Gutenberg HTML text reflects the 1831 revised edition; publicationYear records the work’s original 1818 publication.",
+      "rights": {
+        "unitedStates": "Underlying work and the 1831 edition are public domain; the work was first published in 1818.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Mary Shelley died in 1851.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Letter I, paragraph beginning ‘I am already far north’; source HTML rendered line 46. Text and punctuation match the source transcription."
+    },
+    {
+      "id": "stevenson-treasure-island-opening-long",
+      "category": "Long",
+      "text": "Squire Trelawney, Dr. Livesey, and the rest of these gentlemen having asked me to write down the whole particulars about Treasure Island, from the beginning to the end, keeping nothing back but the bearings of the island, and that only because there is still treasure not yet lifted, I take up my pen in the year of grace 17—, and go back to the time when my father kept the Admiral Benbow inn and the brown old seaman with the sabre cut first took up his lodging under our roof.",
+      "wordCount": 90,
+      "author": "Robert Louis Stevenson",
+      "workTitle": "Treasure Island",
+      "publicationYear": 1883,
+      "sourceUrl": "https://www.gutenberg.org/files/120/120-h/120-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/120",
+      "sourceEdition": "Project Gutenberg HTML transcription.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1883.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Robert Louis Stevenson died in 1894.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Part One, Chapter I, opening paragraph; source HTML rendered line 94. Text and punctuation match the source."
+    },
+    {
+      "id": "carroll-alice-puzzle-extra",
+      "category": "Extra",
+      "text": "Alice took up the fan and gloves, and, as the hall was very hot, she kept fanning herself all the time she went on talking: “Dear, dear! How queer everything is to-day! And yesterday things went on just as usual. I wonder if I’ve been changed in the night? Let me think: was I the same when I got up this morning? I almost think I can remember feeling a little different. But if I’m not the same, the next question is, Who in the world am I? Ah, that’s the great puzzle!” And she began thinking over all the children she knew that were of the same age as herself, to see if she could have been changed for any of them.",
+      "wordCount": 123,
+      "author": "Lewis Carroll",
+      "workTitle": "Alice’s Adventures in Wonderland",
+      "publicationYear": 1865,
+      "sourceUrl": "https://www.gutenberg.org/files/11/11-h/11-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/11",
+      "sourceEdition": "Project Gutenberg HTML transcription, Millennium Fulcrum Edition 3.0.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1865.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Lewis Carroll died in 1898.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Chapter I, Alice’s reflection after taking the fan; source HTML rendered lines 91–92. Text and punctuation match the source."
+    },
+    {
+      "id": "dickens-christmas-weather-extra",
+      "category": "Extra",
+      "text": "External heat and cold had little influence on Scrooge. No warmth could warm, no wintry weather chill him. No wind that blew was bitterer than he, no falling snow was more intent upon its purpose, no pelting rain less open to entreaty. Foul weather didn’t know where to have him. The heaviest rain, and snow, and hail, and sleet, could boast of the advantage over him in only one respect. They often “came down” handsomely, and Scrooge never did. Nobody ever stopped him in the street to say, with gladsome looks, “My dear Scrooge, how are you? When will you come to see me?” No beggars implored him to bestow a trifle, no children asked him what it was o’clock, no man or woman ever once in all his life inquired the way to such and such a place, of Scrooge.",
+      "wordCount": 141,
+      "author": "Charles Dickens",
+      "workTitle": "A Christmas Carol",
+      "publicationYear": 1843,
+      "sourceUrl": "https://www.gutenberg.org/files/46/46-h/46-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/46",
+      "sourceEdition": "Project Gutenberg HTML transcription; ebook identifies the 1843 first-edition cover and illustrations.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1843.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Charles Dickens died in 1870.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Stave One, paragraphs describing Scrooge’s indifference to weather and passers-by; source HTML rendered lines 101–102. Text and punctuation match the source."
+    },
+    {
+      "id": "doyle-scandal-watson-extra",
+      "category": "Extra",
+      "text": "My own complete happiness, and the home-centred interests which rise up around the man who first finds himself master of his own establishment, were sufficient to absorb all my attention, while Holmes, who loathed every form of society with his whole Bohemian soul, remained in our lodgings in Baker Street, buried among his old books, and alternating from week to week between cocaine and ambition, the drowsiness of the drug, and the fierce energy of his own keen nature. He was still, as ever, deeply attracted by the study of crime, and occupied his immense faculties and extraordinary powers of observation in following out those clues, and clearing up those mysteries which had been abandoned as hopeless by the official police. From time to time I heard some vague account of his doings: of his summons to Odessa in the case of the Trepoff murder, of his clearing up of the singular tragedy of the Atkinson brothers at Trincomalee, and finally of the mission which he had accomplished so delicately and successfully for the reigning family of Holland.",
+      "wordCount": 178,
+      "author": "Arthur Conan Doyle",
+      "workTitle": "The Adventures of Sherlock Holmes — ‘A Scandal in Bohemia’",
+      "publicationYear": 1892,
+      "sourceUrl": "https://www.gutenberg.org/files/1661/1661-h/1661-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/1661",
+      "sourceEdition": "Project Gutenberg HTML transcription of the 1892 story collection.",
+      "rights": {
+        "unitedStates": "Underlying collection is public domain; first published in 1892.",
+        "thailand": "Underlying story is public domain under the ordinary life-plus-50-year term; Arthur Conan Doyle died in 1930.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "‘A Scandal in Bohemia’, Watson’s account following his marriage; source HTML rendered lines 46–48. Text and punctuation match the source."
+    },
+    {
+      "id": "grahame-wind-in-the-willows-mole-extra",
+      "category": "Extra",
+      "text": "First with brooms, then with dusters; then on ladders and steps and chairs, with a brush and a pail of whitewash; till he had dust in his throat and eyes, and splashes of white-wash all over his black fur, and an aching back and weary arms. Spring was moving in the air above and in the earth below and around him, penetrating even his dark and lowly little house with its spirit of divine discontent and longing. It was small wonder, then, that he suddenly flung down his brush on the floor, said 'Bother!' and 'O blow!' and also 'Hang spring-cleaning?' and bolted out of the house without even waiting to put on his coat. Something up above was calling him imperiously, and he made for the steep little tunnel which answered in his case to the gravelled carriage-drive owned by animals whose residences are nearer to the sun and air.",
+      "wordCount": 151,
+      "author": "Kenneth Grahame",
+      "workTitle": "The Wind in the Willows",
+      "publicationYear": 1908,
+      "sourceUrl": "https://en.wikisource.org/wiki/The_Wind_in_the_Willows_(1908)/Chapter_1",
+      "sourceLandingPage": "https://en.wikisource.org/wiki/The_Wind_in_the_Willows_(1908)",
+      "sourceEdition": "Wikisource transcription of the 1908 first edition, cross-checked against the validated scan-based text.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1908.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Kenneth Grahame died in 1932.",
+        "licenseNote": "Underlying work is public domain. Wikisource user-contributed transcription is offered under CC BY-SA 4.0 (and GFDL); attribution and ShareAlike terms apply if relying on that transcription license."
+      },
+      "sourceEvidence": "Chapter I, ‘The River Bank’, paragraph beginning ‘First with brooms’; source page text following the opening sentence. The passage matches the Wikisource transcription; its punctuation is preserved."
+    },
+    {
+      "id": "shelley-frankenstein-letter-ultimate",
+      "category": "Ultimate",
+      "text": "You will rejoice to hear that no disaster has accompanied the commencement of an enterprise which you have regarded with such evil forebodings. I arrived here yesterday, and my first task is to assure my dear sister of my welfare and increasing confidence in the success of my undertaking. I am already far north of London, and as I walk in the streets of Petersburgh, I feel a cold northern breeze play upon my cheeks, which braces my nerves and fills me with delight. Do you understand this feeling? This breeze, which has travelled from the regions towards which I am advancing, gives me a foretaste of those icy climes. Inspirited by this wind of promise, my daydreams become more fervent and vivid. I try in vain to be persuaded that the pole is the seat of frost and desolation; it ever presents itself to my imagination as the region of beauty and delight. There, Margaret, the sun is for ever visible, its broad disk just skirting the horizon and diffusing a perpetual splendour. There—for with your leave, my sister, I will put some trust in preceding navigators—there snow and frost are banished; and, sailing over a calm sea, we may be wafted to a land surpassing in wonders and in beauty every region hitherto discovered on the habitable globe. Its productions and features may be without example, as the phenomena of the heavenly bodies undoubtedly are in those undiscovered solitudes. What may not be expected in a country of eternal light? I may there discover the wondrous power which attracts the needle and may regulate a thousand celestial observations that require only this voyage to render their seeming eccentricities consistent for ever. I shall satiate my ardent curiosity with the sight of a part of the world never before visited, and may tread a land never before imprinted by the foot of man. These are my enticements, and they are sufficient to conquer all fear of danger or death and to induce me to commence this laborious voyage with the joy a child feels when he embarks in a little boat, with his holiday mates, on an expedition of discovery up his native river.",
+      "wordCount": 365,
+      "author": "Mary Wollstonecraft Shelley",
+      "workTitle": "Frankenstein; or, the Modern Prometheus",
+      "publicationYear": 1818,
+      "sourceUrl": "https://www.gutenberg.org/files/84/84-h/84-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/84",
+      "sourceEdition": "Project Gutenberg HTML text reflects the 1831 revised edition; publicationYear records the work’s original 1818 publication.",
+      "rights": {
+        "unitedStates": "Underlying work and the 1831 edition are public domain; the work was first published in 1818.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Mary Shelley died in 1851.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Letter I, from the opening paragraph through the paragraph ending ‘native river’; source HTML rendered lines 45–50. Text and punctuation match. Paragraph breaks are joined with single spaces."
+    },
+    {
+      "id": "dickens-christmas-nephew-ultimate",
+      "category": "Ultimate",
+      "text": "“What else can I be,” returned the uncle, “when I live in such a world of fools as this? Merry Christmas! Out upon merry Christmas! What’s Christmas time to you but a time for paying bills without money; a time for finding yourself a year older, but not an hour richer; a time for balancing your books and having every item in ’em through a round dozen of months presented dead against you? If I could work my will,” said Scrooge indignantly, “every idiot who goes about with ‘Merry Christmas’ on his lips, should be boiled with his own pudding, and buried with a stake of holly through his heart. He should!” “Uncle!” pleaded the nephew. “Nephew!” returned the uncle sternly, “keep Christmas in your own way, and let me keep it in mine.” “Keep it!” repeated Scrooge’s nephew. “But you don’t keep it.” “Let me leave it alone, then,” said Scrooge. “Much good may it do you! Much good it has ever done you!” “There are many things from which I might have derived good, by which I have not profited, I dare say,” returned the nephew. “Christmas among the rest. But I am sure I have always thought of Christmas time, when it has come round—apart from the veneration due to its sacred name and origin, if anything belonging to it can be apart from that—as a good time; a kind, forgiving, charitable, pleasant time; the only time I know of, in the long calendar of the year, when men and women seem by one consent to open their shut-up hearts freely, and to think of people below them as if they really were fellow-passengers to the grave, and not another race of creatures bound on other journeys. And therefore, uncle, though it has never put a scrap of gold or silver in my pocket, I believe that it has done me good, and will do me good; and I say, God bless it!”",
+      "wordCount": 326,
+      "author": "Charles Dickens",
+      "workTitle": "A Christmas Carol",
+      "publicationYear": 1843,
+      "sourceUrl": "https://www.gutenberg.org/files/46/46-h/46-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/46",
+      "sourceEdition": "Project Gutenberg HTML transcription; ebook identifies the 1843 first-edition cover and illustrations.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1843.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Charles Dickens died in 1870.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Stave One, dialogue between Scrooge and his nephew; source HTML rendered lines 124–135. Text and punctuation match; paragraph breaks are joined with single spaces."
+    },
+    {
+      "id": "doyle-scandal-watson-ultimate",
+      "category": "Ultimate",
+      "text": "My own complete happiness, and the home-centred interests which rise up around the man who first finds himself master of his own establishment, were sufficient to absorb all my attention, while Holmes, who loathed every form of society with his whole Bohemian soul, remained in our lodgings in Baker Street, buried among his old books, and alternating from week to week between cocaine and ambition, the drowsiness of the drug, and the fierce energy of his own keen nature. He was still, as ever, deeply attracted by the study of crime, and occupied his immense faculties and extraordinary powers of observation in following out those clues, and clearing up those mysteries which had been abandoned as hopeless by the official police. From time to time I heard some vague account of his doings: of his summons to Odessa in the case of the Trepoff murder, of his clearing up of the singular tragedy of the Atkinson brothers at Trincomalee, and finally of the mission which he had accomplished so delicately and successfully for the reigning family of Holland. Beyond these signs of his activity, however, which I merely shared with all the readers of the daily press, I knew little of my former friend and companion. One night—it was on the twentieth of March, 1888—I was returning from a journey to a patient (for I had now returned to civil practice), when my way led me through Baker Street. As I passed the well-remembered door, which must always be associated in my mind with my wooing, and with the dark incidents of the Study in Scarlet, I was seized with a keen desire to see Holmes again, and to know how he was employing his extraordinary powers.",
+      "wordCount": 287,
+      "author": "Arthur Conan Doyle",
+      "workTitle": "The Adventures of Sherlock Holmes — ‘A Scandal in Bohemia’",
+      "publicationYear": 1892,
+      "sourceUrl": "https://www.gutenberg.org/files/1661/1661-h/1661-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/1661",
+      "sourceEdition": "Project Gutenberg HTML transcription of the 1892 story collection.",
+      "rights": {
+        "unitedStates": "Underlying collection is public domain; first published in 1892.",
+        "thailand": "Underlying story is public domain under the ordinary life-plus-50-year term; Arthur Conan Doyle died in 1930.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "‘A Scandal in Bohemia’, Watson’s account of his life after marriage and his return to Baker Street; source HTML rendered lines 46–49. Text and punctuation match; paragraph breaks are joined with single spaces."
+    },
+    {
+      "id": "austen-pride-jane-elizabeth-ultimate",
+      "category": "Ultimate",
+      "text": "“To oblige you, I would try to believe almost anything, but no one else could be benefited by such a belief as this; for were I persuaded that Charlotte had any regard for him, I should only think worse of her understanding than I now do of her heart. My dear Jane, Mr. Collins is a conceited, pompous, narrow-minded, silly man: you know he is, as well as I do; and you must feel, as well as I do, that the woman who marries him cannot have a proper way of thinking. You shall not defend her, though it is Charlotte Lucas. You shall not, for the sake of one individual, change the meaning of principle and integrity, nor endeavour to persuade yourself or me, that selfishness is prudence, and insensibility of danger security for happiness.” “I must think your language too strong in speaking of both,” replied Jane; “and I hope you will be convinced of it, by seeing them happy together. But enough of this. You alluded to something else. You mentioned two instances. I cannot misunderstand you, but I entreat you, dear Lizzy, not to pain me by thinking that person to blame, and saying your opinion of him is sunk. We must not be so ready to fancy ourselves intentionally injured.",
+      "wordCount": 215,
+      "author": "Jane Austen",
+      "workTitle": "Pride and Prejudice",
+      "publicationYear": 1813,
+      "sourceUrl": "https://www.gutenberg.org/files/1342/1342-h/1342-h.htm",
+      "sourceLandingPage": "https://www.gutenberg.org/ebooks/1342",
+      "sourceEdition": "Project Gutenberg HTML transcription of the novel.",
+      "rights": {
+        "unitedStates": "Underlying work is public domain; first published in 1813.",
+        "thailand": "Underlying work is public domain under the ordinary life-plus-50-year term; Jane Austen died in 1817.",
+        "licenseNote": "Project Gutenberg distribution terms apply to its ebook files; they are distinct from the underlying work’s public-domain status."
+      },
+      "sourceEvidence": "Source HTML rendered lines 1682–1684, dialogue between Elizabeth and Jane. Text and punctuation match; paragraph boundary whitespace is joined."
+    }
+  ]
+}
