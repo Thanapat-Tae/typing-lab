@@ -1,8 +1,14 @@
+import {
+  isTypingCharacterCorrect,
+  isTypingTextCorrect,
+} from "./typingTextComparison";
+
 /** Counts correctly typed characters from completed words and the active word. */
 export function countCorrectCharacters(
   expectedWords: string[],
   completedWords: string[],
   activeWord: string,
+  allowPassagePunctuationAliases = false,
 ): number {
   let correctCharacters = 0;
 
@@ -10,10 +16,25 @@ export function countCorrectCharacters(
     const expectedWord = expectedWords[wordIndex] ?? "";
 
     for (let index = 0; index < Math.min(word.length, expectedWord.length); index += 1) {
-      if (word[index] === expectedWord[index]) correctCharacters += 1;
+      if (
+        isTypingCharacterCorrect(
+          word[index],
+          expectedWord[index],
+          allowPassagePunctuationAliases,
+        )
+      ) {
+        correctCharacters += 1;
+      }
     }
 
-    if (word === expectedWord && wordIndex < expectedWords.length - 1) {
+    if (
+      isTypingTextCorrect(
+        word,
+        expectedWord,
+        allowPassagePunctuationAliases,
+      ) &&
+      wordIndex < expectedWords.length - 1
+    ) {
       correctCharacters += 1;
     }
   });
@@ -24,7 +45,15 @@ export function countCorrectCharacters(
     index < Math.min(activeWord.length, expectedActiveWord.length);
     index += 1
   ) {
-    if (activeWord[index] === expectedActiveWord[index]) correctCharacters += 1;
+    if (
+      isTypingCharacterCorrect(
+        activeWord[index],
+        expectedActiveWord[index],
+        allowPassagePunctuationAliases,
+      )
+    ) {
+      correctCharacters += 1;
+    }
   }
 
   return correctCharacters;

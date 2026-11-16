@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
 import { calculateAccuracy } from "../../utils/calculateAccuracy";
+import {
+  isTypingCharacterCorrect,
+  isTypingTextCorrect,
+  normalizePassagePunctuation,
+} from "../../utils/typingTextComparison";
 import { generateWords } from "../../utils/generateWords";
+import type { Passage, PassageLength } from "../../data/passages";
+import {
+  passageLengthLabels,
+  passageLengthOptions,
+} from "../../data/passageCategories";
+import { selectRandomPassageForPassageMode } from "../../utils/passageUtils";
 import "./TypingTest.css";
 
 const initialTimerBatchSize = 50;
@@ -20,7 +31,7 @@ interface TestStatistics {
   elapsedSeconds: number;
 }
 
-type TypingMode = "normal" | "timer";
+type TypingMode = "normal" | "timer" | "passage";
 type TimerDurationOption = (typeof timerPresets)[number] | "custom";
 type PresetWordCount = (typeof wordCountPresets)[number];
 type WordCountOption = PresetWordCount | "custom";
@@ -96,6 +107,8 @@ function getCappedElapsedMilliseconds(
 function TypingTest() {
   const [mode, setMode] = useState<TypingMode>("normal");
   const [strictMode, setStrictMode] = useState(false);
+  const [passageLength, setPassageLength] = useState<PassageLength>("medium");
+  const [selectedPassage, setSelectedPassage] = useState<Passage | null>(null);
   const [timerWords, setTimerWords] = useState<string[]>([]);
   const [durationOption, setDurationOption] = useState<TimerDurationOption>(30);
   const [customDurationInput, setCustomDurationInput] = useState("30");
@@ -124,7 +137,18 @@ function TypingTest() {
   const isWordCountValid =
     wordCountOption !== "custom" || parsedCustomWordCount !== null;
 
-  const activeWords = mode === "normal" ? normalWords : timerWords;
+  const passageTypingText = selectedPassage
+    ? normalizePassagePunctuation(selectedPassage.text.trim())
+    : "";
+  const passageWords = passageTypingText ? passageTypingText.split(/\s+/) : [];
+  const isPassageUnavailable =
+    mode === "passage" && (!selectedPassage || passageWords.length === 0);
+  const activeWords =
+    mode === "normal"
+      ? normalWords
+      : mode === "timer"
+        ? timerWords
+        : passageWords;
 
   const [timeLeft, setTimeLeft] = useState(30);
   const [hasStarted, setHasStarted] = useState(false);
@@ -132,7 +156,10 @@ function TypingTest() {
   const [resetVersion, setResetVersion] = useState(0);
 
   const isFinished =
-    mode === "normal" && currentWordIndex >= normalWords.length;
+    (mode === "normal" && currentWordIndex >= normalWords.length) ||
+    (mode === "passage" &&
+      !isPassageUnavailable &&
+      currentWordIndex >= passageWords.length);
   const isTimeUp = mode === "timer" && hasStarted && timeLeft === 0;
   const isStrictToggleLocked = hasStarted && !isFinished && !isTimeUp;
   const hasDurationError = mode === "timer" && !isDurationValid;
@@ -168,6 +195,7 @@ function TypingTest() {
       nextDuration = selectedDuration,
       focusTyping = true,
       nextWordCount = selectedWordCount,
+      nextPassageLength = passageLength,
     ) => {
       const passage = passageRef.current;
       restartAnimationRef.current?.cancel();
@@ -211,6 +239,13 @@ function TypingTest() {
         nextMode === "timer" ? generateWords(initialTimerBatchSize) : [],
       );
 
+      if (nextMode === "passage") {
+        setPassageLength(nextPassageLength);
+        setSelectedPassage(
+          selectRandomPassageForPassageMode(nextPassageLength),
+        );
+      }
+
       // When entering Words mode (or retrying in Words), generate the selected count.
       if (nextMode === "normal") {
         setNormalWords(generateWords(nextWordCount));
@@ -228,7 +263,7 @@ function TypingTest() {
       }
 
     },
-    [mode, selectedDuration, selectedWordCount],
+    [mode, passageLength, selectedDuration, selectedWordCount],
   );
 
   const restartSession = useCallback(() => {
@@ -247,7 +282,13 @@ function TypingTest() {
     if (nextMode === "normal" && !isWordCountValid) return;
     // Switching to Words regenerates the selected word count.
     const nextDuration = nextMode === "timer" ? selectedDuration : 0;
-    resetSession(nextMode, nextDuration, true, selectedWordCount);
+    resetSession(
+      nextMode,
+      nextDuration,
+      true,
+      selectedWordCount,
+      passageLength,
+    );
     setMode(nextMode);
   }
 
@@ -269,6 +310,10 @@ function TypingTest() {
     if (mode !== "normal") return;
     setWordCountOption(nextCount);
     resetSession("normal", 0, true, nextCount);
+  }
+
+  function handlePassageLengthChange(nextLength: PassageLength) {
+    resetSession("passage", 0, true, selectedWordCount, nextLength);
   }
 
   function handleStrictModeToggle() {
@@ -419,6 +464,7 @@ function TypingTest() {
       activeWords,
       completedWords,
       currentInput,
+      mode === "passage",
     );
     const { correct, total } = accuracyCountsRef.current;
     setStatistics({
@@ -582,12 +628,56 @@ function TypingTest() {
     return () => observer.disconnect();
   }, []);
 
+  function recordCharacterAttempts(
+    previousInput: string,
+    nextInput: string,
+    expectedWord: string,
+    acceptedSeparator: boolean,
+  ) {
+    // Score only the net inserted delta: deletion and unchanged text never add
+    // attempts, while replacement characters are scored at their new position.
+    const prefixLength = commonPrefixLength(previousInput, nextInput);
+    const suffixLength = commonSuffixLength(
+      previousInput.slice(prefixLength),
+      nextInput.slice(prefixLength),
+    );
+    const insertedText = nextInput.slice(
+      prefixLength,
+      nextInput.length - suffixLength,
+    );
+
+    for (let index = 0; index < insertedText.length; index += 1) {
+      const characterIndex = prefixLength + index;
+      const expectedCharacter =
+        characterIndex < expectedWord.length
+          ? expectedWord[characterIndex]
+          : acceptedSeparator &&
+              characterIndex === expectedWord.length &&
+              (mode === "timer" || currentWordIndex < activeWords.length - 1)
+            ? " "
+            : undefined;
+
+      accuracyCountsRef.current.total += 1;
+      if (
+        expectedCharacter !== undefined &&
+        isTypingCharacterCorrect(
+          insertedText[index],
+          expectedCharacter,
+          mode === "passage",
+        )
+      ) {
+        accuracyCountsRef.current.correct += 1;
+      }
+    }
+  }
+
   function handleInput(value: string) {
     if (
       isFinished ||
       isTimeUp ||
       !isDurationValid ||
-      (mode === "normal" && !isWordCountValid)
+      (mode === "normal" && !isWordCountValid) ||
+      (mode === "passage" && isPassageUnavailable)
     ) {
       return;
     }
@@ -604,17 +694,21 @@ function TypingTest() {
 
     const previousInput = inputValueRef.current;
     const expectedWord = activeWords[currentWordIndex];
-    const isLastNormalWord =
-      mode === "normal" && currentWordIndex === normalWords.length - 1;
+    const isLastFiniteWord =
+      (mode === "normal" && currentWordIndex === normalWords.length - 1) ||
+      (mode === "passage" && currentWordIndex === passageWords.length - 1);
 
     // Finish immediately when the final word is correct.
-    if (isLastNormalWord && value === expectedWord) {
+    if (
+      isLastFiniteWord &&
+      isTypingTextCorrect(value, expectedWord, mode === "passage")
+    ) {
       setStrictSpaceBlocked(false);
       recordCharacterAttempts(previousInput, value, expectedWord, false);
       inputValueRef.current = "";
       startTimerIfNeeded();
       setCompletedWords((previous) => [...previous, value]);
-      setCurrentWordIndex(normalWords.length);
+      setCurrentWordIndex(activeWords.length);
       setCurrentInput("");
       return;
     }
@@ -627,7 +721,10 @@ function TypingTest() {
         return;
       }
 
-      if (strictMode && previousInput !== expectedWord) {
+      if (
+        strictMode &&
+        !isTypingTextCorrect(previousInput, expectedWord, mode === "passage")
+      ) {
         setCurrentInput(previousInput);
         if (!strictSpaceBlocked) setStrictSpaceBlocked(true);
         return;
@@ -683,42 +780,6 @@ function TypingTest() {
     }
   }
 
-  function recordCharacterAttempts(
-    previousInput: string,
-    nextInput: string,
-    expectedWord: string,
-    acceptedSeparator: boolean,
-  ) {
-    // Score only the net inserted delta: deletion and unchanged text never add
-    // attempts, while replacement characters are scored at their new position.
-    const prefixLength = commonPrefixLength(previousInput, nextInput);
-    const suffixLength = commonSuffixLength(
-      previousInput.slice(prefixLength),
-      nextInput.slice(prefixLength),
-    );
-    const insertedText = nextInput.slice(
-      prefixLength,
-      nextInput.length - suffixLength,
-    );
-
-    for (let index = 0; index < insertedText.length; index += 1) {
-      const characterIndex = prefixLength + index;
-      const expectedCharacter =
-        characterIndex < expectedWord.length
-          ? expectedWord[characterIndex]
-          : acceptedSeparator &&
-              characterIndex === expectedWord.length &&
-              (mode === "timer" || currentWordIndex < activeWords.length - 1)
-            ? " "
-            : undefined;
-
-      accuracyCountsRef.current.total += 1;
-      if (insertedText[index] === expectedCharacter) {
-        accuracyCountsRef.current.correct += 1;
-      }
-    }
-  }
-
   function handleCompositionStart() {
     isComposingRef.current = true;
     compositionStartValueRef.current = inputValueRef.current;
@@ -770,6 +831,14 @@ function TypingTest() {
             onClick={() => handleModeChange("timer")}
           >
             Timer
+          </button>
+          <button
+            className="typing-mode-option"
+            type="button"
+            aria-pressed={mode === "passage"}
+            onClick={() => handleModeChange("passage")}
+          >
+            Passage
           </button>
         </div>
         <button
@@ -887,6 +956,26 @@ function TypingTest() {
               </p>
             </div>
           </div>
+        ) : mode === "passage" ? (
+          <div className="typing-control-row typing-normal-controls">
+            <div
+              className="typing-word-count-selector typing-length-selector"
+              role="group"
+              aria-label="Passage length"
+            >
+              {passageLengthOptions.map((length) => (
+                <button
+                  key={length}
+                  className="typing-word-count-option"
+                  type="button"
+                  aria-pressed={passageLength === length}
+                  onClick={() => handlePassageLengthChange(length)}
+                >
+                  {passageLengthLabels[length]}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : (
           <div className="typing-control-row typing-normal-controls">
             <div
@@ -987,9 +1076,16 @@ function TypingTest() {
         </p>
       </div>
 
+      {isPassageUnavailable && (
+        <p className="typing-passage-unavailable" role="status">
+          No passages are available for this length.
+        </p>
+      )}
       <div
         ref={passageRef}
-        className="typing-passage typing-passage-rolling"
+        className={`typing-passage typing-passage-rolling ${
+          mode === "passage" ? "typing-passage-mode" : ""
+        }`}
       >
         <div
           ref={animatedCaretRef}
@@ -1002,7 +1098,12 @@ function TypingTest() {
           const isCurrentWord = wordIndex === currentWordIndex;
           const isCompletedWord = wordIndex < currentWordIndex;
           const isIncorrectCompletedWord =
-            isCompletedWord && completedWords[wordIndex] !== word;
+            isCompletedWord &&
+            !isTypingTextCorrect(
+              completedWords[wordIndex] ?? "",
+              word,
+              mode === "passage",
+            );
           const showCaret = isCurrentWord && !isFinished && !isTimeUp;
 
           const expectedCharacters = word.split("");
@@ -1027,7 +1128,13 @@ function TypingTest() {
                 const typedCharacter = typedCharacters[charIndex];
                 if (typedCharacter !== undefined) {
                   className =
-                    typedCharacter === character ? "correct" : "incorrect";
+                    isTypingCharacterCorrect(
+                      typedCharacter,
+                      character,
+                      mode === "passage",
+                    )
+                      ? "correct"
+                      : "incorrect";
                 } else if (isCompletedWord) {
                   className = "typing-character-missing";
                 }
@@ -1077,6 +1184,63 @@ function TypingTest() {
           );
         })}
       </div>
+      {mode === "passage" &&
+        selectedPassage &&
+        (selectedPassage.author ||
+          selectedPassage.workTitle ||
+          selectedPassage.sourceUrl ||
+          (selectedPassage.category === "original" &&
+            !selectedPassage.author &&
+            !selectedPassage.workTitle)) && (
+          <p className="typing-passage-attribution">
+            {selectedPassage.category === "original" &&
+              !selectedPassage.author &&
+              !selectedPassage.workTitle && <span>Original passage</span>}
+            {selectedPassage.author && <span>{selectedPassage.author}</span>}
+            {selectedPassage.author && selectedPassage.workTitle && (
+              <span aria-hidden="true">·</span>
+            )}
+            {selectedPassage.workTitle && (
+              <cite>{selectedPassage.workTitle}</cite>
+            )}
+            {selectedPassage.sourceUrl &&
+              selectedPassage.category !== "original" && (
+                <>
+                  {(selectedPassage.author || selectedPassage.workTitle) && (
+                    <span aria-hidden="true">·</span>
+                  )}
+                  <a
+                    href={selectedPassage.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`View source for ${
+                      selectedPassage.workTitle ??
+                      selectedPassage.author ??
+                      "passage"
+                    } (opens in a new tab)`}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 16 16"
+                      width="12"
+                      height="12"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ verticalAlign: "-0.1em" }}
+                    >
+                      <path d="M9 3h4v4" />
+                      <path d="m13 3-6 6" />
+                      <path d="M11 9v3H4V5h3" />
+                    </svg>{" "}
+                    View source
+                  </a>
+                </>
+              )}
+          </p>
+        )}
       <div className="typing-restart-row">
         <button
           className="typing-rewind"
@@ -1133,6 +1297,7 @@ function TypingTest() {
         disabled={
           isFinished ||
           isTimeUp ||
+          isPassageUnavailable ||
           (mode === "timer" && !isDurationValid) ||
           (mode === "normal" && !isWordCountValid)
         }

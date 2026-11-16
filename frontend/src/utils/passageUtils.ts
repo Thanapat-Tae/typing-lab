@@ -13,6 +13,23 @@ import { passageLengthOptions } from "../data/passageCategories";
  */
 const lastSelectedIdByLength: Partial<Record<PassageLength, string>> = {};
 
+function chooseRandomPassage(
+  length: PassageLength,
+  candidates: Passage[],
+): Passage | null {
+  if (candidates.length === 0) return null;
+
+  const lastId = lastSelectedIdByLength[length];
+  const pool =
+    candidates.length > 1 && lastId
+      ? candidates.filter((passage) => passage.id !== lastId)
+      : candidates;
+
+  const selected = pool[Math.floor(Math.random() * pool.length)];
+  lastSelectedIdByLength[length] = selected.id;
+  return selected;
+}
+
 /**
  * Selects a random passage from the given length category.
  * Avoids immediate repeats when at least two passages exist for that length.
@@ -21,19 +38,27 @@ const lastSelectedIdByLength: Partial<Record<PassageLength, string>> = {};
 export function selectRandomPassage(length: PassageLength): Passage {
   const candidates = filterByLength(length);
 
-  if (candidates.length === 0) {
+  const selected = chooseRandomPassage(length, candidates);
+  if (selected === null) {
     throw new Error(`No passages available for length category: ${length}`);
   }
 
-  const lastId = lastSelectedIdByLength[length];
-  const pool =
-    candidates.length > 1 && lastId
-      ? candidates.filter((p) => p.id !== lastId)
-      : candidates;
-
-  const selected = pool[Math.floor(Math.random() * pool.length)];
-  lastSelectedIdByLength[length] = selected.id;
   return selected;
+}
+
+/**
+ * Selects an original or literary passage for Passage Mode.
+ * Returns null when the requested length has no eligible passages.
+ */
+export function selectRandomPassageForPassageMode(
+  length: PassageLength,
+): Passage | null {
+  const candidates = filterByLength(length).filter(
+    (passage) =>
+      passage.category === "original" || passage.category === "literature",
+  );
+
+  return chooseRandomPassage(length, candidates);
 }
 
 /**

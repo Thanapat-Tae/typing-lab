@@ -271,6 +271,42 @@
   align-content: flex-start;
 }
 
+.typing-passage-mode {
+  margin-bottom: 0.5rem;
+}
+
+.typing-passage-attribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+  color: #9ba8b8;
+  font-size: 0.85rem;
+}
+
+.typing-passage-attribution cite {
+  font-style: italic;
+}
+
+.typing-passage-attribution a {
+  color: #9bb8e8;
+  text-underline-offset: 0.15em;
+}
+
+.typing-passage-attribution a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid rgba(155, 184, 232, 0.75);
+  outline-offset: 3px;
+}
+
+.typing-passage-unavailable {
+  margin: 0 0 1.5rem;
+  color: #9ba8b8;
+  text-align: center;
+}
+
 .typing-animated-caret {
   position: absolute;
   top: 0;
