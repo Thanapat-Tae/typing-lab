@@ -1,4 +1,4 @@
-import type { PassageLength } from "./passages";
+import { LENGTH_RANGES, type PassageLength } from "./passages";
 
 /** Descriptive categories retained for the future Passages mode. */
 export const passageLengthOptions: PassageLength[] = [
@@ -17,10 +17,4 @@ export const passageLengthLabels: Record<PassageLength, string> = {
   ultimate: "Ultimate",
 };
 
-export const passageLengthWordRanges: Record<PassageLength, [number, number]> = {
-  short: [20, 50],
-  medium: [51, 120],
-  long: [121, 250],
-  extra: [251, 500],
-  ultimate: [501, 800],
-};
+export const passageLengthWordRanges = LENGTH_RANGES;

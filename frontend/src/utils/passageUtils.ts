@@ -1,5 +1,11 @@
 import type { Passage, PassageLength } from "../data/passages";
-import { passages, filterByLength } from "../data/passages";
+import {
+  countWords,
+  filterByLength,
+  LENGTH_RANGES,
+  passages,
+} from "../data/passages";
+import { passageLengthOptions } from "../data/passageCategories";
 
 /**
  * Internal state for repeat avoidance.
@@ -49,13 +55,7 @@ export function resetRepeatState(length?: PassageLength): void {
  * Useful for UI to disable unavailable lengths.
  */
 export function getPassageCountsByLength(): Record<PassageLength, number> {
-  const lengths: PassageLength[] = [
-    "short",
-    "medium",
-    "long",
-    "extra",
-    "ultimate",
-  ];
+  const lengths = passageLengthOptions;
   const counts: Record<PassageLength, number> = {} as Record<
     PassageLength,
     number
@@ -76,17 +76,11 @@ export function validatePassageLengths(): string[] {
   const errors: string[] = [];
 
   for (const passage of passages) {
-    const wordCount = passage.text.trim().split(/\s+/).filter(Boolean).length;
-    let matched = false;
-
-    for (const [, [min, max]] of Object.entries(
-      { short: [20, 50], medium: [51, 120], long: [121, 250], extra: [251, 500], ultimate: [501, Infinity] } as Record<PassageLength, [number, number]>
-    )) {
-      if (wordCount >= min && wordCount <= max) {
-        matched = true;
-        break;
-      }
-    }
+    const wordCount = countWords(passage.text);
+    const matched = passageLengthOptions.some((length) => {
+      const [min, max] = LENGTH_RANGES[length];
+      return wordCount >= min && wordCount <= max;
+    });
 
     if (!matched) {
       errors.push(

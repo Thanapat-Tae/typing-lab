@@ -9,18 +9,21 @@ export interface Passage {
   text: string;
   category: "literature" | "quotes" | "original";
   author?: string;
+  workTitle?: string;
   source?: string;
-  license: string;
+  sourceUrl?: string;
+  license?: string;
+  publicationYear?: number;
 }
 
 export type PassageLength = "short" | "medium" | "long" | "extra" | "ultimate";
 
 export const LENGTH_RANGES: Record<PassageLength, [number, number]> = {
-  short: [20, 50],
-  medium: [51, 120],
-  long: [121, 250],
-  extra: [251, 500],
-  ultimate: [501, Infinity],
+  short: [12, 24],
+  medium: [25, 48],
+  long: [49, 96],
+  extra: [97, 192],
+  ultimate: [193, 384],
 };
 
 export const passages: Passage[] = [
