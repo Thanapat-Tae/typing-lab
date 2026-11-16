@@ -1,4 +1,4 @@
-import { words as defaultVocabulary } from "../data/words";
+import { words as defaultVocabulary } from "../data/words.ts";
 
 export interface GenerateWordsOptions {
   existingSequence?: readonly string[];

@@ -19,3 +19,21 @@ export function calculateAccuracy(
 
   return (correctAttempts / totalAttempts) * 100;
 }
+
+/** Returns incorrect character-entry attempts from the raw attempt counters. */
+export function calculateErrors(
+  correctAttempts: number,
+  totalAttempts: number,
+): number {
+  if (
+    !Number.isInteger(correctAttempts) ||
+    !Number.isInteger(totalAttempts) ||
+    correctAttempts < 0 ||
+    totalAttempts < 0 ||
+    correctAttempts > totalAttempts
+  ) {
+    return 0;
+  }
+
+  return totalAttempts - correctAttempts;
+}

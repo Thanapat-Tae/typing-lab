@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { calculateWpm, countCorrectCharacters } from "../../utils/calculateWpm";
-import { calculateAccuracy } from "../../utils/calculateAccuracy";
+import { calculateAccuracy, calculateErrors } from "../../utils/calculateAccuracy";
 import {
   isTypingCharacterCorrect,
   isTypingTextCorrect,
@@ -13,6 +13,11 @@ import {
   passageLengthOptions,
 } from "../../data/passageCategories";
 import { selectRandomPassageForPassageMode } from "../../utils/passageUtils";
+import {
+  getRoundContentUpdate,
+  type ContentAction,
+  type RoundMode,
+} from "../../utils/roundContent";
 import "./TypingTest.css";
 
 const initialTimerBatchSize = 50;
@@ -29,9 +34,10 @@ interface TestStatistics {
   words: number;
   characters: number;
   elapsedSeconds: number;
+  errors: number;
 }
 
-type TypingMode = "normal" | "timer" | "passage";
+type TypingMode = RoundMode;
 type TimerDurationOption = (typeof timerPresets)[number] | "custom";
 type PresetWordCount = (typeof wordCountPresets)[number];
 type WordCountOption = PresetWordCount | "custom";
@@ -196,6 +202,7 @@ function TypingTest() {
       focusTyping = true,
       nextWordCount = selectedWordCount,
       nextPassageLength = passageLength,
+      contentAction: ContentAction = "generate",
     ) => {
       const passage = passageRef.current;
       restartAnimationRef.current?.cancel();
@@ -235,20 +242,30 @@ function TypingTest() {
       );
       setHasStarted(false);
       setStatistics(null);
-      setTimerWords(
-        nextMode === "timer" ? generateWords(initialTimerBatchSize) : [],
-      );
+      const contentUpdate = getRoundContentUpdate({
+        contentAction,
+        mode: nextMode,
+        wordCount: nextWordCount,
+        timerBatchSize: initialTimerBatchSize,
+        passageLength: nextPassageLength,
+        generateWords,
+        selectPassage: selectRandomPassageForPassageMode,
+      });
+      if (contentUpdate?.timerWords !== undefined) {
+        setTimerWords(contentUpdate.timerWords);
+      }
 
       if (nextMode === "passage") {
         setPassageLength(nextPassageLength);
-        setSelectedPassage(
-          selectRandomPassageForPassageMode(nextPassageLength),
-        );
+        if (contentUpdate && "selectedPassage" in contentUpdate) {
+          setSelectedPassage(contentUpdate.selectedPassage ?? null);
+        }
       }
 
-      // When entering Words mode (or retrying in Words), generate the selected count.
       if (nextMode === "normal") {
-        setNormalWords(generateWords(nextWordCount));
+        if (contentUpdate?.normalWords !== undefined) {
+          setNormalWords(contentUpdate.normalWords);
+        }
         setSelectedWordCount(nextWordCount);
       }
 
@@ -266,16 +283,43 @@ function TypingTest() {
     [mode, passageLength, selectedDuration, selectedWordCount],
   );
 
-  const restartSession = useCallback(() => {
+  const performRoundAction = useCallback((contentAction: ContentAction) => {
     const now = performance.now();
     if (restartCooldownRef.current !== null && now < restartCooldownRef.current) {
       return;
     }
     if (mode === "normal" && !isWordCountValid) return;
+    if (mode === "timer" && !isDurationValid) return;
+    if (mode === "passage" && isPassageUnavailable) return;
 
-    resetSession();
+    resetSession(
+      mode,
+      selectedDuration,
+      true,
+      selectedWordCount,
+      passageLength,
+      contentAction,
+    );
     restartCooldownRef.current = now + 350;
-  }, [isWordCountValid, mode, resetSession]);
+  }, [
+    isDurationValid,
+    isPassageUnavailable,
+    isWordCountValid,
+    mode,
+    passageLength,
+    resetSession,
+    selectedDuration,
+    selectedWordCount,
+  ]);
+
+  const retryCurrentRound = useCallback(
+    () => performRoundAction("preserve"),
+    [performRoundAction],
+  );
+  const startNewRound = useCallback(
+    () => performRoundAction("generate"),
+    [performRoundAction],
+  );
 
   function handleModeChange(nextMode: TypingMode) {
     if (nextMode === mode) return;
@@ -294,8 +338,13 @@ function TypingTest() {
 
   function handleDurationChange(nextOption: TimerDurationOption) {
     if (nextOption === durationOption) return;
+    if (nextOption === "custom" && customDuration === null) {
+      setDurationOption("custom");
+      return;
+    }
     const nextDuration =
       nextOption === "custom" ? customDuration ?? Number.NaN : nextOption;
+    if (!Number.isFinite(nextDuration) || nextDuration <= 0) return;
     setDurationOption(nextOption);
     resetSession("timer", nextDuration);
   }
@@ -303,7 +352,7 @@ function TypingTest() {
   function handleCustomDurationInput(value: string) {
     setCustomDurationInput(value);
     const nextDuration = isPositiveSafeIntegerSeconds(value);
-    resetSession("timer", nextDuration ?? Number.NaN, false);
+    if (nextDuration !== null) resetSession("timer", nextDuration, false);
   }
 
   function handleWordCountChange(nextCount: PresetWordCount) {
@@ -372,31 +421,42 @@ function TypingTest() {
 
   useEffect(() => {
     function handleRetryShortcut(event: KeyboardEvent) {
-      const isRetryShortcut =
+      const isRestartShortcut =
         event.shiftKey &&
         !event.ctrlKey &&
         !event.metaKey &&
         !event.altKey &&
         event.key === "Enter" &&
         !event.isComposing;
+      const isRetryShortcut =
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey &&
+        !event.altKey &&
+        event.key === "Enter" &&
+        !event.isComposing &&
+        statistics !== null;
 
-      if (!isRetryShortcut) return;
+      if (!isRestartShortcut && !isRetryShortcut) return;
 
       if (
-        event.target instanceof HTMLInputElement &&
-        event.target !== inputRef.current
+        (event.target instanceof HTMLInputElement &&
+          event.target !== inputRef.current) ||
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target instanceof HTMLElement && event.target.isContentEditable)
       ) {
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
-      if (!event.repeat) restartSession();
+      if (event.repeat) return;
+      if (isRestartShortcut) startNewRound();
+      else retryCurrentRound();
     }
 
     window.addEventListener("keydown", handleRetryShortcut);
     return () => window.removeEventListener("keydown", handleRetryShortcut);
-  }, [isFinished, isTimeUp, restartSession]);
+  }, [isFinished, isTimeUp, retryCurrentRound, startNewRound, statistics]);
 
   useEffect(() => {
     if (resetVersion > 0) inputRef.current?.focus();
@@ -473,6 +533,7 @@ function TypingTest() {
       words: completedWords.length,
       characters: correctCharacters,
       elapsedSeconds: cappedElapsedMilliseconds / 1000,
+      errors: calculateErrors(correct, total),
     });
   }, [
     activeWords,
@@ -886,6 +947,10 @@ function TypingTest() {
         </button>
       </div>
 
+      <div
+        className="typing-round-content"
+        hidden={statistics !== null}
+      >
       <div className="typing-controls">
         {mode === "timer" ? (
           <div className="typing-control-row typing-timer-controls">
@@ -915,7 +980,8 @@ function TypingTest() {
                 aria-pressed={durationOption === "custom"}
                 onClick={() =>
                   durationOption === "custom"
-                    ? resetSession("timer", customDuration ?? Number.NaN)
+                    ? customDuration !== null &&
+                      resetSession("timer", customDuration)
                     : handleDurationChange("custom")
                 }
               >
@@ -1245,8 +1311,8 @@ function TypingTest() {
         <button
           className="typing-rewind"
           type="button"
-          aria-label="Restart typing test"
-          onClick={restartSession}
+          aria-label="Restart with new content"
+          onClick={startNewRound}
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 4v6h6" />
@@ -1255,23 +1321,69 @@ function TypingTest() {
         </button>
         <span className="typing-retry-shortcut">Restart · Shift + Enter</span>
       </div>
+      </div>
       {statistics !== null && (
-        <div className="typing-session-summary">
-          <p className="typing-result">
-            <span>{statistics.wpm.toFixed(1)} WPM</span>
-            <span>{statistics.accuracy.toFixed(1)}% accuracy</span>
-            <span>{statistics.words} words</span>
-            <span>{statistics.characters} chars</span>
-            <span>{statistics.elapsedSeconds.toFixed(1)}s</span>
-          </p>
-          <button
-            className="typing-retry"
-            type="button"
-            onClick={restartSession}
-          >
-            Retry
-          </button>
-        </div>
+        <section className="typing-results" aria-labelledby="typing-results-title">
+          <h2 id="typing-results-title">Round complete</h2>
+          <div className="typing-results-primary">
+            <div className="typing-result-metric typing-result-metric-wpm">
+              <span className="typing-result-label">WPM</span>
+              <strong>{statistics.wpm.toFixed(1)}</strong>
+            </div>
+            <div className="typing-result-metric typing-result-metric-accuracy">
+              <span className="typing-result-label">Accuracy</span>
+              <strong>{statistics.accuracy.toFixed(1)}%</strong>
+            </div>
+          </div>
+          <div className="typing-results-secondary">
+            <div className="typing-result-metric">
+              <span className="typing-result-label">Words</span>
+              <strong>{statistics.words}</strong>
+            </div>
+            <div className="typing-result-metric">
+              <span className="typing-result-label">Characters</span>
+              <strong>{statistics.characters}</strong>
+            </div>
+            <div className="typing-result-metric">
+              <span className="typing-result-label">Time</span>
+              <strong>{statistics.elapsedSeconds.toFixed(1)}s</strong>
+            </div>
+            <div className="typing-result-metric">
+              <span className="typing-result-label">Errors</span>
+              <strong>{statistics.errors}</strong>
+            </div>
+          </div>
+          <div className="typing-results-actions">
+            <button
+              className="typing-results-action"
+              type="button"
+              onClick={retryCurrentRound}
+            >
+              <span className="typing-results-action-title">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 4v6h6" />
+                  <path d="M4.5 14a8 8 0 1 0 2-7L3 10" />
+                </svg>
+                Retry
+              </span>
+              <span className="typing-results-shortcut">Ctrl / Cmd + Enter</span>
+            </button>
+            <button
+              className="typing-results-action"
+              type="button"
+              onClick={startNewRound}
+            >
+              <span className="typing-results-action-title">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z" />
+                  <path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+                </svg>
+                Restart
+              </span>
+              <span className="typing-results-shortcut">Shift + Enter</span>
+            </button>
+          </div>
+        </section>
       )}
       <input
         ref={inputRef}
